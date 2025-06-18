@@ -1,0 +1,68 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+{% load static admin_urls %}
+
+{% block extrastyle %}
+  <link rel="stylesheet" href="{% static 'author/author_change_form_custom.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="container-fluid px-3 py-2">
+    <div class="row g-4">
+      <div class="col-md-8">
+        <div class="dashboard-box">
+          <div class="dashboard-header">✏️ Edit Author</div>
+          {{ adminform.form.non_field_errors }}
+          <form method="post" enctype="multipart/form-data" novalidate>
+            {% csrf_token %}
+            {% for fieldset in adminform %}
+              <div class="mb-4">
+                {% if fieldset.name %}
+                  <div class="section-label">{{ fieldset.name }}</div>
+                {% endif %}
+                {% for line in fieldset %}
+                  {% for field in line %}
+                    <div class="mb-2">
+                      {{ field.errors }}
+                      <label class="form-label">{{ field.label }}</label>
+                      {{ field.field }}
+                      {% if field.help_text %}
+                        <div class="form-text">{{ field.help_text }}</div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                {% endfor %}
+              </div>
+            {% endfor %}
+
+            {% block after_field_sets %}
+              {{ inline_admin_formsets }}
+            {% endblock %}
+
+            {% block submit_buttons_bottom %}
+              <div class="d-flex justify-content-between mt-4">
+                {{ submit_row }}
+              </div>
+            {% endblock %}
+          </form>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="dashboard-box">
+          <div class="dashboard-header">📌 Static Info</div>
+          {{ static_info }}
+        </div>
+        <div class="dashboard-box">
+          <div class="dashboard-header">📚 Dynamic Book Info</div>
+          {{ dynamic_info }}
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}

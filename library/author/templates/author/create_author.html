@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Create author
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    {% if request.user.role %}
+    {% if author %}
+    <div class="alert alert-success text-center" role="alert">
+        Successfully added author <strong>{{ author.name }}</strong>!
+    </div>
+    {% endif %}
+    <div class="container my-5 d-flex justify-content-center">
+        <div class="card shadow-sm" style="width: 100%; max-width: 500px;">
+            <div class="card-body bg-light rounded">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="name" class="form-label fw-bold">Author name:</label>
+                        <input type="text" name="name" id="name" class="form-control" placeholder="Enter author's name">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="surname" class="form-label fw-bold">Author surname:</label>
+                        <input type="text" name="surname" id="surname" class="form-control" placeholder="Enter surname">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="patronymic" class="form-label fw-bold">Patronymic:</label>
+                        <input type="text" name="patronymic" id="patronymic" class="form-control"
+                               placeholder="Enter patronymic">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="author_source_url" class="form-label fw-bold">Посилання на джерело про
+                            автора:</label>
+                        <input type="url" name="author_source_url" id="author_source_url" class="form-control"
+                               placeholder="https://example.com/author-source">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="book_title" class="form-label fw-bold">Назва книги:</label>
+                        <input type="text" name="book_title" id="book_title" class="form-control"
+                               placeholder="Enter book title">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="book_source_url" class="form-label fw-bold">Посилання на джерело про книгу:</label>
+                        <input type="url" name="book_source_url" id="book_source_url" class="form-control"
+                               placeholder="https://example.com/book-source">
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-success px-4">Add Author</button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary px-4">
+                            Go to Authors
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="alert alert-danger text-center mt-5" role="alert">
+        <h4 class="alert-heading">Access Denied</h4>
+        <p>Only librarians can manage and create authors.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

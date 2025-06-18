@@ -1,0 +1,94 @@
+from django.db import models
+
+
+class Book(models.Model):
+    name = models.CharField(unique=True, blank=True, max_length=128)
+    description = models.CharField(blank=True, max_length=256)
+    count = models.IntegerField(default=10)
+    publication_year = models.PositiveIntegerField(blank=True, null=True, verbose_name="Year of Publication")
+    date_of_issue = models.DateField(blank=True, null=True, verbose_name="Date of Issue")
+
+    def __str__(self):
+        return (
+            f"'id': {self.id}, "
+            f"'name': '{self.name}', "
+            f"'description': '{self.description}', "
+            f"'count': {self.count}, "
+            f"'publication_year': {self.publication_year}, "
+            f"'authors': {[author.id for author in self.authors.all()]}"
+        )
+
+    def __repr__(self):
+        return f"Book(id={self.id})"
+
+    @staticmethod
+    def get_by_id(book_id):
+        return Book.objects.filter(id=book_id).first()
+
+    @staticmethod
+    def delete_by_id(book_id):
+        if Book.get_by_id(book_id) is None:
+            return False
+        Book.objects.get(id=book_id).delete()
+        return True
+
+    @staticmethod
+    def create(name, description, count=10, authors=None, publication_year=None, date_of_issue=None):
+        if len(name) > 128:
+            return None
+
+        book = Book(
+            name=name,
+            description=description,
+            count=count,
+            publication_year=publication_year,
+            date_of_issue=date_of_issue
+        )
+        book.save()
+        if authors is not None:
+            book.authors.set(authors)
+        return book
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'count': self.count,
+            'publication_year': self.publication_year,
+            'date_of_issue': str(self.date_of_issue) if self.date_of_issue else None,
+            'authors': [author.id for author in self.authors.all()]
+        }
+
+    def update(self, name=None, description=None, count=None, publication_year=None, date_of_issue=None):
+        if name is not None:
+            self.name = name
+
+        if description is not None:
+            self.description = description
+
+        if count is not None:
+            self.count = count
+
+        if publication_year is not None:
+            self.publication_year = publication_year
+
+        if date_of_issue is not None:
+            self.date_of_issue = date_of_issue
+
+        self.save()
+
+    def add_authors(self, authors):
+        if (authors is not None):
+            for elem in authors:
+                self.authors.add(elem)
+                self.save()
+
+    def remove_authors(self, authors):
+        if authors:
+            for author in authors:
+                self.authors.remove(author)
+
+    @staticmethod
+    def get_all(cls):
+        return cls.objects.all().prefetch_related('authors').distinct()

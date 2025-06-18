@@ -1,0 +1,32 @@
+{% extends 'start.html' %}
+{% load static %}
+
+{% block title %}
+Register info
+{% endblock %}
+
+{% block content %}
+<div class="mt-5 text-center">
+
+  {% if messageSuccess %}
+    <div class="alert alert-success">
+      Successful authentication
+    </div>
+    <p class="mt-3">
+      <a href="{% url 'authentication:main' %}" class="btn btn-primary">
+        Link to main
+      </a>
+    </p>
+  {% else %}
+    <div class="alert alert-danger">
+      {{ message_err }}
+    </div>
+    <p class="mt-3">
+      <a href="{% url 'authentication:login' %}" class="btn btn-outline-secondary">
+        Try again
+      </a>
+    </p>
+  {% endif %}
+
+</div>
+{% endblock %}

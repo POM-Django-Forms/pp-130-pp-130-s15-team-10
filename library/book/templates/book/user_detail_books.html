@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block styles %}
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'author/css/style.css' %}">
+{% endblock %}
+
+{% block title %}
+  Show all books
+{% endblock %}
+
+{% block content %}
+  <table>
+    <caption><h2> Book's {{ user.email }} </h2></caption>
+    <thead>
+    <tr>
+      <th>Name</th>
+      <th>Count</th>
+    </tr>
+    </thead>
+    <tbody>
+      {% for book in books %}
+        <tr>
+          <td>{{ book.name }}</td>
+          <td>{{ book.count }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <hr>
+{% endblock %}

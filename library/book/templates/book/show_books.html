@@ -1,0 +1,131 @@
+{% extends 'base.html' %}
+
+{% block title %}Books Page{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h1 class="mb-4 text-center"><i class="bi bi-book-half"></i> Book Library</h1>
+
+    <div class="row mb-4">
+        <div class="col-md-8 offset-md-2">
+            <form class="d-flex" action="" method="get">
+                <input class="form-control me-2" type="text" name="q"
+                       placeholder="Search by title or author" value="{{ query }}">
+                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+            </form>
+        </div>
+    </div>
+
+    {% if filtered %}
+    <div class="row mb-3">
+        <div class="col-md-8 offset-md-2 text-end">
+            <a href="{% url 'book:show_books' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% for message in messages %}
+    {% if message.tags == 'error' %}
+    {% with alert_class='danger' %}
+    <div class="alert alert-{{ alert_class }} alert-dismissible fade show text-center fw-semibold" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endwith %}
+    {% elif message.tags == 'success' %}
+    {% with alert_class='success' %}
+    <div class="alert alert-{{ alert_class }} alert-dismissible fade show text-center fw-semibold" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endwith %}
+    {% elif message.tags == 'warning' %}
+    {% with alert_class='warning' %}
+    <div class="alert alert-{{ alert_class }} alert-dismissible fade show text-center fw-semibold" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endwith %}
+    {% elif message.tags == 'info' %}
+    {% with alert_class='info' %}
+    <div class="alert alert-{{ alert_class }} alert-dismissible fade show text-center fw-semibold" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endwith %}
+    {% else %}
+    {% with alert_class='secondary' %}
+    <div class="alert alert-{{ alert_class }} alert-dismissible fade show text-center fw-semibold" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endwith %}
+    {% endif %}
+    {% endfor %}
+
+    <div class="row">
+        {% for book in page_obj %}
+        <div class="col-md-4 mb-4">
+            <a href="{% url 'book:book_detail' book.id %}" class="text-decoration-none text-dark">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <h5 class="card-title book-title">
+                            <i class="bi bi-journal-bookmark-fill text-primary"></i> {{ book.name }}
+                        </h5>
+                        <p class="card-text book-author">
+                            <i class="bi bi-person-circle text-primary"></i>
+                            {% for author in book.authors.all %}
+                            <span class="badge bg-info text-dark me-1">
+                  {{ author.name }} {{ author.surname }}
+                </span>
+                            {% empty %}
+                            <span class="text-muted">Unknown Author</span>
+                            {% endfor %}
+                        </p>
+                        <p class="mt-auto">
+                            <span class="badge bg-secondary"><i class="bi bi-stack"></i> Count: {{ book.count }}</span>
+                        </p>
+                    </div>
+                </div>
+            </a>
+
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}"
+                   aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+            <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

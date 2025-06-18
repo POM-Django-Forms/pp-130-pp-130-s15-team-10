@@ -1,0 +1,54 @@
+{% extends 'base.html' %}
+
+{% block title %}Your Orders{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4 text-primary text-center">
+        <i class="bi bi-journal-check"></i> Your Orders
+    </h2>
+
+    <div class="row justify-content-center">
+      <div class="col-md-10 col-lg-8">
+        <div class="table-responsive shadow-sm rounded p-3">
+            <table class="table table-striped table-hover align-middle mb-0">
+                <thead class="table-primary">
+                <tr>
+                    <th><i class="bi bi-book-fill me-2"></i>Book Name</th>
+                    <th><i class="bi bi-person-fill me-2"></i>Author(s)</th>
+                    <th><i class="bi bi-calendar-event-fill me-2"></i>Until</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% if orders %}
+                    {% for order in orders %}
+                    <tr>
+                        <td>{{ order.book.name }}</td>
+                        <td>
+                            {% for author in order.book.authors.all %}
+                                {{ author.name }} {{ author.surname }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                <em>No authors</em>
+                            {% endfor %}
+                        </td>
+                        <td>{{ order.plated_end_at|date:"d M Y" }}</td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                <tr>
+                    <td colspan="3" class="text-center text-muted fst-italic py-3">No orders found.</td>
+                </tr>
+                {% endif %}
+                </tbody>
+            </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-center mt-4">
+        <a href="{% url 'order:create_order' %}" class="btn btn-lg btn-success shadow-sm">
+            <i class="bi bi-plus-circle me-2"></i> Create Order
+        </a>
+    </div>
+</div>
+{% endblock %}

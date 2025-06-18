@@ -1,0 +1,20 @@
+.dashboard-box {
+  background: #f8f9fa;
+  border-radius: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.dashboard-header {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #343a40;
+  margin-bottom: 10px;
+}
+
+.section-label {
+  font-weight: 500;
+  color: #6c757d;
+  margin-bottom: 5px;
+}

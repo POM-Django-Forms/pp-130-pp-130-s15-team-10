@@ -1,0 +1,29 @@
+{% extends 'start.html' %}
+
+{% block title %}
+  Register Info
+{% endblock %}
+
+{% block content %}
+<div class="py-5">
+  {% if messageSuccess %}
+    <div class="alert alert-success text-center" role="alert">
+      <strong>Successful registration!</strong>
+    </div>
+    <p class="text-center mt-4">
+      <a href="{% url 'authentication:login' %}" class="btn btn-primary">
+        You can log in now
+      </a>
+    </p>
+  {% else %}
+    <div class="alert alert-danger text-center" role="alert">
+      {{ message_err }}
+    </div>
+    <p class="text-center mt-4">
+      <a href="{% url 'authentication:register' %}" class="btn btn-outline-secondary">
+        Try again
+      </a>
+    </p>
+  {% endif %}
+</div>
+{% endblock %}

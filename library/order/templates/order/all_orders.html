@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}All Orders{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4 text-primary text-center">
+        <i class="bi bi-list-ul me-2"></i> All Orders
+    </h2>
+
+    <div class="row mb-4 justify-content-center">
+        <div class="col-md-8">
+            <form class="d-flex" method="get" role="search" aria-label="Order search form">
+                <input class="form-control me-2" type="search" name="q"
+                       placeholder="Search by Order ID, Date, Book, Author, User Email or Name"
+                       value="{{ query|default:'' }}" aria-describedby="searchHelp">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                {% if query %}
+                <a href="{% url 'author:show_authors' %}" class="btn btn-outline-secondary ms-2" role="button"
+                   aria-label="Clear search">
+                    <i class="bi bi-x-circle me-1"></i> Clear
+                </a>
+                {% endif %}
+            </form>
+            <small id="searchHelp" class="form-text text-muted">
+                You can search by order ID, date (YYYY-MM-DD), book title, author name, user email or full/last name.
+            </small>
+        </div>
+    </div>
+
+    {% if orders %}
+    <form id="close-form" method="post" action="{% url 'order:close_order' %}">
+        {% csrf_token %}
+        <input type="hidden" name="page" value="{{ page_obj.number }}">
+        <input type="hidden" name="q" value="{{ query|default:'' }}">
+        <div class="table-responsive shadow-sm rounded p-3">
+            <table class="table table-striped table-bordered align-middle text-center w-100">
+                <thead class="table-light">
+                <tr>
+                    <th>Select</th>
+                    <th>Order ID</th>
+                    <th style="min-width: 140px;">Date</th>
+                    <th>Book</th>
+                    <th>Author(s)</th>
+                    <th style="min-width: 140px;">Planned Return</th>
+                    <th style="min-width: 140px;">Actual Return</th>
+                    <th>Penalty</th>
+                    <th>User</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>
+                        <input type="checkbox" name="selected_orders" value="{{ order.id }}">
+                    </td>
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.created_at|date:"d M Y" }}</td>
+                    <td>{{ order.book.name }}</td>
+                    <td>
+                        {% for author in order.book.authors.all %}
+                        {{ author.name }} {{ author.surname }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                        <span class="text-muted">Unknown</span>
+                        {% endfor %}
+                    </td>
+                    <td>{{ order.plated_end_at|date:"d M Y" }}</td>
+                    <td>
+                        {% if order.end_at %}
+                        {{ order.end_at|date:"d M Y" }}
+                        {% else %}
+                        <span class="text-muted">Not returned</span>
+                        {% endif %}
+                    </td>
+                    <td>${{ order.penalty|floatformat:2 }}</td>
+                    <td>
+                        {% if order.user %}
+                        {{ order.user.first_name }} {{ order.user.middle_name }} {{ order.user.last_name }}<br>
+                        <small class="text-muted">{{ order.user.email }}</small>
+                        {% else %}
+                        <span class="text-muted">Unknown user</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex justify-content-center gap-3 mt-4">
+            <button type="submit" class="btn btn-danger shadow-sm" id="close-button">
+                <i class="bi bi-x-circle me-2"></i> Close Selected Orders
+            </button>
+        </div>
+    </form>
+    {% else %}
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="alert alert-warning text-center fw-semibold" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                No orders found{% if query %} for "{{ query }}"{% endif %}.
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if page_obj.has_other_pages %}
+    <nav aria-label="Order pagination">
+        <ul class="pagination justify-content-center mt-4">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}"
+                   aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+            {% endif %}
+
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+            <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+            {% else %}
+            <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a></li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% else %}
+            <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

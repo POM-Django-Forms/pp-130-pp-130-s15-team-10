@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ book.name }} — Book Detail{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center my-5">
+    <div class="card shadow-lg w-100" style="max-width: 720px;">
+        <div class="card-body">
+            <h2 class="card-title text-center text-primary mb-4">
+                <i class="bi bi-book-half me-2"></i>{{ book.name }}
+            </h2>
+
+            <p class="card-text mb-4">
+                {{ book.description|default:"No description available." }}
+            </p>
+
+            <div class="mb-3">
+                <span class="badge bg-secondary p-2">
+                    <i class="bi bi-stack me-1"></i>Available copies: {{ book.count }}
+                </span>
+            </div>
+
+            <div class="mb-4">
+                <h5 class="mb-2"><i class="bi bi-person-circle me-1"></i> Author(s):</h5>
+                <ul class="list-unstyled mb-0">
+                    {% for author in book.authors.all %}
+                    <li>
+                        <a href="https://en.wikipedia.org/wiki/{{ author.name|urlencode }}_{{ author.surname|urlencode }}"
+                           class="text-decoration-underline link-primary fw-semibold"
+                           target="_blank">
+                            {{ author.name }} {{ author.surname }}
+                            <i class="bi bi-box-arrow-up-right small"></i>
+                        </a>
+                    </li>
+                    {% empty %}
+                    <li class="text-muted">Unknown author</li>
+                    {% endfor %}
+                </ul>
+            </div>
+
+            <div class="mb-3">
+                <h5 class="mt-4"><i class="bi bi-link-45deg"></i> Learn more:</h5>
+                <p>
+                    <a href="https://en.wikipedia.org/wiki/{{ book.name|urlencode }}" target="_blank">
+                        Wikipedia article about "{{ book.name }}"
+                        <i class="bi bi-box-arrow-up-right small"></i>
+                    </a>
+                </p>
+            </div>
+
+            <div class="text-end mt-4">
+                <a href="{% url 'book:show_books' %}" class="btn btn-outline-primary">
+                    <i class="bi bi-arrow-left"></i> Back to Library
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block styles %}
+<link rel="stylesheet" href="{% static 'authentication/css/main.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="hero text-center">
+    <div class="container">
+        <div class="hero-content">
+            <h1>Welcome to our Library</h1>
+            {% if request.user.is_authenticated %}
+            <h3>{{ request.user.first_name }} {{ request.user.last_name }}</h3>
+            {% endif %}
+                <p>
+                  {% if request.user.is_authenticated and request.user.role == 1 %}
+                    Manage authors & their books, view users, and enjoy editing orders!
+                  {% else %}
+                    Discover books & authors, manage your orders, and enjoy reading!
+                  {% endif %}
+                </p>
+            <a href="{% url 'book:show_books' %}" class="btn btn-primary btn-lg">
+                <i class="bi bi-book"></i> Browse Books
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container mb-5">
+    <div class="row g-4 justify-content-center">
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center">
+                <div class="card-body d-flex flex-column">
+                    <i class="bi bi-journal-bookmark card-icon mb-3"></i>
+                    <h5 class="card-title">All Books</h5>
+                    <p class="card-text flex-grow-1">View, search and filter the entire collection</p>
+                    <a href="{% url 'book:show_books' %}" class="btn btn-outline-primary mt-3">View Books</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Authors -->
+        <div class="col-12 col-md-6 col-lg-3">
+          <div class="card h-100 shadow-sm text-center">
+            <div class="card-body d-flex flex-column">
+              <i class="bi bi-people card-icon mb-3"></i>
+              <h5 class="card-title">Authors</h5>
+              <p class="card-text flex-grow-1">
+                {% if request.user.get_role_display == "librarian" %}
+                  See all authors, add new or remove unused ones
+                {% else %}
+                  View all authors in the library
+                {% endif %}
+              </p>
+              <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary mt-3">
+                {% if request.user.get_role_display == "librarian" %}
+                  Manage Authors
+                {% else %}
+                  View Authors
+                {% endif %}
+              </a>
+            </div>
+          </div>
+        </div>
+
+        {% if request.user.get_role_display == 'librarian' %}
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center">
+                <div class="card-body d-flex flex-column">
+                    <i class="bi bi-person-badge card-icon mb-3"></i>
+                    <h5 class="card-title">Users</h5>
+                    <p class="card-text flex-grow-1">View list of all users or search a specific one by ID</p>
+                    <a href="{% url 'authentication:show_all_users' %}" class="btn btn-outline-primary mt-3">View
+                        Users</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="col-12 col-md-6 col-lg-3">
+            <div class="card h-100 shadow-sm text-center">
+                <div class="card-body d-flex flex-column">
+                    <i class="bi bi-card-checklist card-icon mb-3"></i>
+                    <h5 class="card-title">
+                        {% if request.user.get_role_display == 'librarian' %}
+                        Manage Orders
+                        {% else %}
+                        My Orders
+                        {% endif %}
+                    </h5>
+                    <p class="card-text flex-grow-1">
+                        {% if request.user.get_role_display == 'librarian' %}
+                        View, create and delete orders
+                        {% else %}
+                        View and make your orders
+                        {% endif %}
+                    </p>
+                    {% if request.user.get_role_display == 'librarian' %}
+                    <a href="{% url 'order:all_orders' %}" class="btn btn-outline-primary mt-3">Manage Orders</a>
+                    {% else %}
+                    <a href="{% url 'order:own_orders' %}" class="btn btn-outline-primary mt-3">My Orders</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

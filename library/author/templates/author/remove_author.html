@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Remove Author
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    {% if request.user.role %}
+
+    {% if deleted_author %}
+    <div class="alert alert-success text-center" role="alert">
+        Successfully deleted author <strong>{{ deleted_author.name }}</strong>!
+    </div>
+    {% endif %}
+
+    <div class="container my-5 d-flex justify-content-center">
+        <div class="card shadow-sm" style="width: 100%; max-width: 500px;">
+            <div class="card-body bg-light rounded">
+                <form method="post">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label for="authors-select" class="form-label fw-bold">Choose an author to delete:</label>
+                        <select name="authors" id="authors-select" class="form-select custom-select-lg" required
+                                style="min-height: 48px;">
+                            <option value="">-- Please choose an author --</option>
+                            {% for author in authors %}
+                            <option value="{{ author.id }}" style="padding: 10px 15px; line-height: 1.5;">
+                                {{ author.name }} {{ author.surname }} {{ author.patronymic }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-danger px-4">Delete Author</button>
+                    </div>
+                    <div class="text-center mt-3">
+                        <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary px-4">
+                            Go to Authors
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div class="container mt-4" style="max-width: 500px;">
+        {% for message in messages %}
+        {% if message.tags == 'error' %}
+        {% with alert_class='danger' %}
+        <div class="alert alert-{{ alert_class }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endwith %}
+        {% else %}
+        {% with alert_class=message.tags %}
+        <div class="alert alert-{{ alert_class }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endwith %}
+        {% endif %}
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="alert alert-danger text-center mt-5" role="alert">
+        <h4 class="alert-heading">Access Denied</h4>
+        <p>Only librarians can manage and delete authors.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

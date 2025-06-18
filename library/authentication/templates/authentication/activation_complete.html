@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="alert alert-success text-center">
+  <h4>Account activated!</h4>
+  <p>Your account has been activated and you are now logged in.</p>
+  <a href="{% url 'authentication:main' %}" class="btn btn-primary">Go to Home</a>
+</div>
+{% endblock %}

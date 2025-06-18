@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Show all authors
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <h2 class="text-center mb-4">Authors</h2>
+
+    <div class="row mb-4 justify-content-center">
+        <div class="col-md-8">
+            <form class="d-flex" method="get" role="search" aria-label="Author search form">
+                <input class="form-control me-2" type="search" name="q"
+                       placeholder="Search by name, surname or patronymic"
+                       value="{{ query|default:'' }}" aria-describedby="searchHelp">
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                {% if query %}
+                <a href="{% url 'author:show_authors' %}" class="btn btn-outline-secondary ms-2" role="button"
+                   aria-label="Clear search">
+                    <i class="bi bi-x-circle me-1"></i> Clear
+                </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+
+    {% if page_obj.object_list %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover table-striped table-sm text-center" id="authors-table">
+            <thead class="table-light">
+            <tr>
+                <th>Surname</th>
+                <th>Name</th>
+                <th>Patronymic</th>
+            </tr>
+            </thead>
+            <tbody id="author-body">
+            {% for author in page_obj %}
+            <tr>
+                <td>{{ author.surname }}</td>
+                <td>{{ author.name }}</td>
+                <td>{{ author.patronymic }}</td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-warning text-center fw-semibold" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        No authors found{% if query %} for "{{ query }}"{% endif %}.
+    </div>
+    {% endif %}
+
+    {% if page_obj.has_other_pages %}
+    <hr class="my-4" style="width: 100%; border-top: 2px solid #dee2e6;">
+    <nav aria-label="Author pagination">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Previous</span>
+            </li>
+            {% endif %}
+
+            {% for page_num in page_obj.paginator.page_range %}
+            <li class="page-item {% if page_num == page_obj.number %}active{% endif %}">
+                <a class="page-link" href="?q={{ query }}&page={{ page_num }}">{{ page_num }}</a>
+            </li>
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            {% else %}
+            <li class="page-item disabled">
+                <span class="page-link">Next</span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+
+    {% if request.user.role %}
+    <hr class="my-4" style="width: 100%; border-top: 2px solid #dee2e6;">
+    <div class="d-flex justify-content-center gap-4">
+        <a href="{% url 'author:create_author' %}" class="btn btn-success">Create author</a>
+        <a href="{% url 'author:remove_author' %}" class="btn btn-danger">Delete author</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
