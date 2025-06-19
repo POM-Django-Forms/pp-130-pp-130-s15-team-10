@@ -34,4 +34,4 @@ class CustomUserAdmin(UserAdmin):
         """Redirect to the user list after adding, except if 'Add another' pressed."""
         if "_addanother" in request.POST:
             return super().response_add(request, obj, post_url_continue)
-        return HttpResponseRedirect(reverse("author:authentication_customuser_changelist"))
+        return HttpResponseRedirect(reverse("admin:authentication_customuser_changelist"))

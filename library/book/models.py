@@ -15,10 +15,17 @@ class Book(models.Model):
         param authors: list of Authors
         type authors: list->Author
     """
-    name = models.CharField(unique=True, blank=True, max_length=128)
+    name = models.CharField(unique=True, max_length=128)
     description = models.CharField(blank=True, max_length=256)
     count = models.IntegerField(default=10)
     publication_year = models.PositiveIntegerField(blank=True, null=True, verbose_name="Year of Publication")
+    book_source_url = models.URLField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Source URL",
+        help_text="Source URL about the book"
+    )
     date_of_issue = models.DateField(blank=True, null=True, verbose_name="Date of Issue")
 
     def __str__(self):
@@ -32,7 +39,7 @@ class Book(models.Model):
             f"'description': '{self.description}', "
             f"'count': {self.count}, "
             f"'publication_year': {self.publication_year}, "
-            f"'authors': {[author.id for author in self.authors.all()]}"
+            f"'authors': [{', '.join(author.name + ' ' + author.surname for author in self.authors.all())}]"
         )
 
     def __repr__(self):
@@ -167,3 +174,23 @@ class Book(models.Model):
         returns data for json request with QuerySet of all book
         """
         return cls.objects.all().prefetch_related('authors').distinct()
+
+    def update_limited_fields(self, date_of_issue=None, count=None, book_source_url=None):
+        """
+        Update 3 fields.
+
+        :param date_of_issue: datetime.date або None
+        :param count: int або None
+        :param book_source_url: str або None
+        :return: None
+        """
+        if date_of_issue is not None:
+            self.date_of_issue = date_of_issue
+
+        if count is not None:
+            self.count = count
+
+        if book_source_url is not None:
+            self.book_source_url = book_source_url
+
+        self.save()

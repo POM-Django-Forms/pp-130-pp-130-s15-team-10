@@ -1,0 +1,100 @@
+{% extends "admin/base_site.html" %}
+{% load form_tags %}
+{% load widget_tweaks %}
+{% load static %}
+
+{% block content_title %}
+<h1 class="h3 mb-4"></h1>
+{% endblock %}
+
+{% block title %}Edit Book{% endblock %}
+
+{% block extrastyle %}
+{{ block.super }}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+  h2 { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card shadow-sm mb-4">
+        <div class="card-header bg-primary text-white fw-bold">
+          Book Info
+        </div>
+        <div class="card-body">
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <fieldset class="mb-4">
+              <legend class="text-primary fs-6 mb-3">Static Info</legend>
+
+              <div class="mb-3">
+                <label class="form-label">Title</label>
+                <input type="text" class="form-control" readonly value="{{ book.name }}">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Authors</label>
+                <input type="text" class="form-control" readonly
+                  value="{% for author in book.authors.all %}{{ author.name }} {{ author.surname }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Year of Publication</label>
+                <input type="text" class="form-control" readonly value="{{ book.publication_year|default:'-' }}">
+              </div>
+            </fieldset>
+
+            <fieldset class="mb-4">
+              <legend class="text-primary fs-6 mb-3">✏️ Editable Info</legend>
+
+              <div class="mb-3">
+                {{ form.count.label_tag }}
+                {{ form.count }}
+                {% if form.count.errors %}
+                  <div class="text-danger">{{ form.count.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                {{ form.book_source_url.label_tag }}
+                {{ form.book_source_url|attr:"class=form-control" }}
+                {% if form.book_source_url.errors %}
+                  <div class="text-danger">{{ form.book_source_url.errors }}</div>
+                {% endif %}
+              </div>
+
+              <div class="mb-3">
+                {{ form.date_of_issue.label_tag }}
+                {{ form.date_of_issue|attr:"class=form-control" }}
+                {% if form.date_of_issue.errors %}
+                  <div class="text-danger">{{ form.date_of_issue.errors }}</div>
+                {% endif %}
+              </div>
+            </fieldset>
+
+            <div class="d-flex justify-content-between mt-4">
+              <a href="{% url 'admin:book_book_changelist' %}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i> Back to Books
+              </a>
+              <button type="submit" class="btn btn-success px-4">
+                <i class="bi bi-save me-1"></i> Save Changes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+{% endblock %}

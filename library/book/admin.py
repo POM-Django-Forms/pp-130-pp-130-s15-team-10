@@ -1,6 +1,10 @@
 from django.contrib import admin
 from django.contrib.admin import SimpleListFilter
 from author.models import Author
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse
+from django.views.decorators.csrf import csrf_exempt
+from .forms import BookLimitedUpdateForm, AddBookForm
 from .models import Book
 
 
@@ -27,28 +31,65 @@ class AuthorsFilter(SimpleListFilter):
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-    list_display = ['name', "get_authors", "publication_year", 'count']
+    add_form_template = 'book/add_form_custom.html'
+
+    def add_view(self, request, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+
+        if request.method == 'POST':
+            form = AddBookForm(request.POST)
+            if form.is_valid():
+                book = form.save()
+                form.save_m2m()
+                return redirect(reverse('admin:book_book_changelist'))
+        else:
+            form = AddBookForm()
+
+        authors = Author.objects.all()
+
+        extra_context.update({
+            'form': form,
+            'authors': authors,
+        })
+
+        return super().add_view(request, form_url, extra_context=extra_context)
+
+    list_display = ["id", 'name', "get_authors", "publication_year", 'count']
 
     def get_authors(self, obj):
-        return ", ".join([author.name for author in obj.authors.all()])
+        return ", ".join([f"{author.name} {author.surname}" for author in obj.authors.all()])
 
     get_authors.short_description = "Authors"
 
     list_display_links = ['name']
 
-    list_filter = (AuthorsFilter, "publication_year")
+    list_filter = ("id", AuthorsFilter, "publication_year")
+
     search_fields = ['id', 'name', 'authors__name', 'authors__surname']
     list_editable = ['count']
     filter_vertical = ['authors']
-    ordering = ['name']
-
-    fieldsets = (
-        ("Don't change", {
-            'fields': ('name', 'authors', 'publication_year')
-        }),
-        ("To Change", {
-            'fields': ("date_of_issue", "count", "description")
-        }),
-    )
+    ordering = ['id']
 
     inlines = [AuthorInlineAdmin]
+
+    change_form_template = "book/change_form_limited.html"
+
+    @csrf_exempt
+    def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        book = get_object_or_404(Book, pk=object_id) if object_id else None
+
+        if request.method == "POST":
+            form = BookLimitedUpdateForm(request.POST, instance=book)
+            if form.is_valid():
+                form.save()
+                return redirect(reverse('admin:book_book_change', args=[book.pk]))
+        else:
+            form = BookLimitedUpdateForm(instance=book)
+
+        extra_context.update({
+            'form': form,
+            'book': book,
+        })
+
+        return super().changeform_view(request, object_id, form_url, extra_context=extra_context)

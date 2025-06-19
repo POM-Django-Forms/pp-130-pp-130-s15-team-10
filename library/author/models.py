@@ -15,10 +15,17 @@ class Author(models.Model):
         param patronymic: Describes middle name of the author
         type patronymic: str max_length=20
     """
-    name = models.CharField(blank=True, max_length=20)
-    surname = models.CharField(blank=True, max_length=20)
+    name = models.CharField(max_length=20, blank=False, null=False)
+    surname = models.CharField(max_length=20, blank=False, null=False)
     patronymic = models.CharField(max_length=20, default=None, blank=True)
     books = models.ManyToManyField(book.models.Book, related_name='authors')
+    author_source_url = models.URLField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name="Source URL",
+        help_text="Source URL about the author"
+    )
 
     def __str__(self):
         """
@@ -97,7 +104,8 @@ class Author(models.Model):
     def update(self,
                name=None,
                surname=None,
-               patronymic=None):
+               patronymic=None,
+               author_source_url=None):
         """
         Updates author in the database with the specified parameters.\n
         param name: Describes name of the author
@@ -108,13 +116,14 @@ class Author(models.Model):
         type patronymic: str max_length=20
         :return: None
         """
-
         if name and len(name) <= 20:
             self.name = name
         if surname and len(surname) <= 20:
             self.surname = surname
         if patronymic and len(patronymic) <= 20:
             self.patronymic = patronymic
+        if author_source_url is not None:
+            self.author_source_url = author_source_url
         self.save()
 
     @staticmethod
@@ -123,9 +132,3 @@ class Author(models.Model):
         returns data for json request with QuerySet of all authors
         """
         return Author.objects.all().order_by('surname', 'name', 'patronymic')
-
-    @property
-    def easter_egg(self):
-        if self.books.count() > 5:
-            return "🎉 Avid Author"
-        return None

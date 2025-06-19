@@ -19,13 +19,12 @@ from django.views.generic import RedirectView
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path(
         '',
         RedirectView.as_view(pattern_name='authentication:login', permanent=False),
         name='home-redirect'
     ),
-    path('author/', admin.site.urls),
+    path('admin/', admin.site.urls),
     path('', include(('author.urls', 'author'), namespace='author')),
     path('book/', include(('book.urls','book'), namespace='book')),
     path('order/', include(('order.urls','order'), namespace='order')),

@@ -2,9 +2,13 @@ import datetime
 from datetime import timedelta
 from book.models import Book
 from django.contrib import messages
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views import View
+
+from .forms import OrderAdminForm
 from .models import Order
 from datetime import datetime
 from django.db.models import Q
@@ -69,12 +73,11 @@ def show_own_orders(request):
 
 
 def user_already_ordered_this_book(user, book_id):
-    return Order.objects.filter(user=user, book_id=book_id).exists()
-
+    return Order.objects.filter(user=user, book_id=book_id, end_at__isnull=True).exists()
 
 def get_books_not_ordered_by_user(user):
-    ordered_books = Order.objects.filter(user=user).values_list('book_id', flat=True)
-    return Book.objects.exclude(id__in=ordered_books)
+    active_ordered_books = Order.objects.filter(user=user, end_at__isnull=True).values_list('book_id', flat=True)
+    return Book.objects.exclude(id__in=active_ordered_books)
 
 
 @login_required
@@ -159,3 +162,21 @@ def close_order(request):
         return redirect(f"{base_url}{query_params}")
 
     return redirect('order:all_orders')
+
+
+@method_decorator(login_required, name='dispatch')
+class UpdateOrderView(View):
+    template_name = 'order/update_order.html'
+
+    def get(self, request, order_id):
+        order = get_object_or_404(Order, pk=order_id)
+        form = OrderAdminForm(instance=order)
+        return render(request, self.template_name, {'form': form, 'order': order})
+
+    def post(self, request, order_id):
+        order = get_object_or_404(Order, pk=order_id)
+        form = OrderAdminForm(request.POST, instance=order)
+        if form.is_valid():
+            form.save()
+            return redirect(reverse('order:update_order', args=[order_id]))
+        return render(request, self.template_name, {'form': form, 'order': order})

@@ -1,5 +1,8 @@
 from django.contrib.messages import get_messages
-from django.shortcuts import render
+from django.db import IntegrityError
+from django.shortcuts import render, redirect
+from django.urls import reverse
+
 from . import models
 from authentication.models import CustomUser
 from order.models import Order
@@ -7,6 +10,8 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from .forms import AddBookForm
+from author.models import Author
 
 
 @login_required
@@ -72,3 +77,29 @@ def user_detail_book(request, user_id):
 
     return render(request, 'book/user_detail_books.html', {'books': books,
                                                            'user': user})
+
+
+@login_required
+def add_book_view(request, form_url='', extra_context=None):
+    extra_context = extra_context or {}
+
+    if request.method == 'POST':
+        form = AddBookForm(request.POST)
+        if form.is_valid():
+            try:
+                form.save()
+                form.save_m2m()
+                return redirect(reverse('admin:book_book_changelist'))
+            except IntegrityError as e:
+                form.add_error(None, "Book with this name already exists.")
+    else:
+        form = AddBookForm()
+
+    authors = Author.objects.all()
+
+    extra_context.update({
+        'form': form,
+        'authors': authors,
+    })
+
+    return super().add_view(request, form_url, extra_context=extra_context)
