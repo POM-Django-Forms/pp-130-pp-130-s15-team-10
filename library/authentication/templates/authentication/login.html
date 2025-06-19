@@ -2,11 +2,11 @@
 {% load static %}
 
 {% block title %}
-  Login
+Login
 {% endblock %}
 
 {% block extra_head %}
-  <link rel="stylesheet" href="{% static 'authentication/css/login.css' %}">
+<link rel="stylesheet" href="{% static 'authentication/css/login.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -17,40 +17,28 @@
         <form method="post">
             {% csrf_token %}
 
-            {% if message_err %}
-              <div class="alert alert-danger text-center" role="alert">
-                {{ message_err }}
+            {% if form.non_field_errors %}
+            <div class="alert alert-danger text-center" role="alert">
+                {{ form.non_field_errors.0 }}
                 <div class="mt-2">
-                  <a href="{% url 'authentication:password_reset' %}"
-                     class="btn btn-outline-pink btn-sm">
-                    Forgot your password?
-                  </a>
+                    <a href="{% url 'authentication:password_reset' %}"
+                       class="btn btn-outline-pink btn-sm">
+                        Forgot your password?
+                    </a>
                 </div>
-              </div>
-            {% elif messageSuccess %}
-                <div class="alert alert-success text-center" role="alert">
-                    {{ messageSuccess }}
-                </div>
+            </div>
             {% endif %}
 
             <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email"
-                       class="form-control"
-                       id="email"
-                       name="email"
-                       placeholder="Enter your email"
-                       required>
+                {{ form.email.label_tag }}
+                {{ form.email }}
+                {{ form.email.errors }}
             </div>
 
             <div class="mb-3">
-                <label for="password" class="form-label">Password</label>
-                <input type="password"
-                       class="form-control"
-                       id="password"
-                       name="password"
-                       placeholder="Enter your password"
-                       required>
+                {{ form.password.label_tag }}
+                {{ form.password }}
+                {{ form.password.errors }}
             </div>
 
             <div class="d-grid">
