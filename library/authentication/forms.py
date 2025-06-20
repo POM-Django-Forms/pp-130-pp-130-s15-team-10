@@ -7,17 +7,15 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.contrib.auth.forms import PasswordResetForm
 
-class BaseUserForm(forms.ModelForm):
-    def clean(self):
-        cleaned_data = super().clean()
-        if not cleaned_data.get('first_name'):
-            raise forms.ValidationError("First name is required.")
-        if not cleaned_data.get('last_name'):
-            raise forms.ValidationError("Last name is required.")
-        return cleaned_data
+
+def validate_names(cleaned_data):
+    if not cleaned_data.get('first_name'):
+        raise forms.ValidationError("First name is required.")
+    if not cleaned_data.get('last_name'):
+        raise forms.ValidationError("Last name is required.")
 
 
-class CustomUserCreationForm(BaseUserForm, UserCreationForm):
+class CustomUserCreationForm(UserCreationForm):
     class Meta:
         model = CustomUser
         fields = (
@@ -25,14 +23,24 @@ class CustomUserCreationForm(BaseUserForm, UserCreationForm):
             "password1", "password2", "is_staff", "is_active", "groups", "user_permissions"
         )
 
+    def clean(self):
+        cleaned_data = super().clean()
+        validate_names(cleaned_data)
+        return cleaned_data
 
-class CustomUserChangeForm(BaseUserForm, UserChangeForm):
+
+class CustomUserChangeForm(UserChangeForm):
     class Meta:
         model = CustomUser
         fields = (
             "email", "first_name", "middle_name", "last_name", "role",
             "is_staff", "is_active", "groups", "user_permissions"
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        validate_names(cleaned_data)
+        return cleaned_data
 
 
 class LoginForm(forms.Form):
@@ -134,6 +142,7 @@ class RegisterForm(forms.Form):
 
         return cleaned_data
 
+
 class StyledPasswordResetForm(PasswordResetForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -141,4 +150,3 @@ class StyledPasswordResetForm(PasswordResetForm):
             'class': 'form-control',
             'placeholder': 'you@example.com'
         })
-
