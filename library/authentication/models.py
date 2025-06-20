@@ -138,7 +138,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.get_role_display()
 
     def has_perm(self, perm, obj=None):
-        return self.is_superuser
+        return self.is_superuser or self.role == 1
 
     def has_module_perms(self, app_label):
         return self.is_superuser
