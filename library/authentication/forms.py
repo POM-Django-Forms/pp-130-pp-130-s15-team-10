@@ -7,7 +7,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.contrib.auth.forms import PasswordResetForm
 
-
 def validate_names(cleaned_data):
     if not cleaned_data.get('first_name'):
         raise forms.ValidationError("First name is required.")
@@ -41,6 +40,7 @@ class CustomUserChangeForm(UserChangeForm):
         cleaned_data = super().clean()
         validate_names(cleaned_data)
         return cleaned_data
+
 
 
 class LoginForm(forms.Form):
@@ -142,7 +142,6 @@ class RegisterForm(forms.Form):
 
         return cleaned_data
 
-
 class StyledPasswordResetForm(PasswordResetForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -150,3 +149,4 @@ class StyledPasswordResetForm(PasswordResetForm):
             'class': 'form-control',
             'placeholder': 'you@example.com'
         })
+

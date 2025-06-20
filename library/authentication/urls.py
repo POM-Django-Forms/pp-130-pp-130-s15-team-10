@@ -1,8 +1,6 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 from . import views
-from django.shortcuts import render
-from .models import CustomUser
 
 app_name = 'authentication'
 
