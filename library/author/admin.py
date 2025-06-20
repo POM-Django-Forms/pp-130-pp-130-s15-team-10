@@ -107,6 +107,7 @@ class PublicationYearFilter(SimpleListFilter):
 class AdminAuthor(admin.ModelAdmin):
     actions = None
     change_form_template = "author/edit_author.html"
+    filter_vertical = ['books']
 
     @csrf_exempt
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):

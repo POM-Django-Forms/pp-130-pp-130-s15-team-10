@@ -67,7 +67,6 @@ class BookAdmin(admin.ModelAdmin):
 
     search_fields = ['id', 'name', 'authors__name', 'authors__surname']
     list_editable = ['count']
-    filter_vertical = ['authors']
     ordering = ['id']
 
     inlines = [AuthorInlineAdmin]

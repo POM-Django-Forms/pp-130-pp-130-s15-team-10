@@ -1,38 +1,41 @@
 from book.models import Book
-from book.models import Book
 from django import forms
+from django.core.exceptions import ValidationError
 from django.forms import modelformset_factory
-
 from .models import Author
 
 
-class BaseAuthorForm(forms.ModelForm):
-    def clean_name(self):
-        name = self.cleaned_data.get('name', '').strip()
-        if not name:
-            raise forms.ValidationError("Name is required.")
-        return name
-
-    def clean_surname(self):
-        surname = self.cleaned_data.get('surname', '').strip()
-        if not surname:
-            raise forms.ValidationError("Surname is required.")
-        return surname
-
-
-class CreateAuthorForm(BaseAuthorForm):
-    author_source_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
+class CreateAuthorForm(forms.ModelForm):
     book_title = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
     book_source_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
 
     class Meta:
         model = Author
-        fields = ('name', 'surname', 'patronymic', 'author_source_url', 'book_title', 'book_source_url')
+        fields = ('name', 'surname', 'patronymic', 'author_source_url')
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter author's name"}),
             'surname': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter surname"}),
             'patronymic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter patronymic"}),
+            'author_source_url': forms.URLInput(attrs={'class': 'form-control'}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        name = cleaned_data.get('name', '').strip()
+        surname = cleaned_data.get('surname', '').strip()
+        patronymic = cleaned_data.get('patronymic', '').strip()
+
+        if not (name or surname or patronymic):
+            raise ValidationError("Please fill at least one of the fields: name, surname, or patronymic.")
+
+        book_title = cleaned_data.get('book_title', '').strip()
+        book_url = cleaned_data.get('book_source_url', '').strip()
+
+        if book_url and not book_title:
+            self.add_error('book_title', 'Book title is required when book source URL is provided.')
+
+        return cleaned_data
+
 
 
 class EditAuthorForm(forms.ModelForm):
