@@ -1,4 +1,6 @@
 from django import forms
+from django.forms import modelformset_factory
+
 from .models import Book
 from author.models import Author
 
@@ -12,11 +14,11 @@ class AddBookForm(forms.ModelForm):
 
     class Meta:
         model = Book
-        fields = ['name', 'publication_year', 'count', 'book_source_url', 'date_of_issue']
+        fields = ['name', 'publication_year', 'count', 'source_url', 'date_of_issue']
         widgets = {
             'publication_year': forms.NumberInput(attrs={'class': 'form-control'}),
             'count': forms.NumberInput(attrs={'class': 'form-control'}),
-            'book_source_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'source_url': forms.URLInput(attrs={'class': 'form-control'}),
             'date_of_issue': forms.DateInput(attrs={'class': 'form-control', 'type': 'date'}),
         }
 
@@ -41,15 +43,15 @@ class AddBookForm(forms.ModelForm):
 class BookLimitedUpdateForm(forms.ModelForm):
     class Meta:
         model = Book
-        fields = ['count', 'book_source_url', 'date_of_issue']
+        fields = ['count', 'source_url', 'date_of_issue']
         widgets = {
             'count': forms.NumberInput(attrs={'class': 'form-control'}),
-            'book_source_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'source_url': forms.URLInput(attrs={'class': 'form-control'}),
             'date_of_issue': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
         }
         labels = {
             'count': 'Count',
-            'book_source_url': 'Source URL',
+            'source_url': 'Source URL',
             'date_of_issue': 'Date of Issue',
         }
 
@@ -58,3 +60,30 @@ class BookLimitedUpdateForm(forms.ModelForm):
         for field in self.fields.values():
             if not isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-control'
+
+
+class BookForm(forms.ModelForm):
+    class Meta:
+        model = Book
+        fields = ['date_of_issue']
+        widgets = {
+            'date_of_issue': forms.DateInput(
+                attrs={
+                    'type': 'date',
+                    'class': 'form-control',
+                },
+                format='%Y-%m-%d'
+            ),
+        }
+        labels = {
+            'date_of_issue': 'Publication Date',
+        }
+
+
+BookFormSet = modelformset_factory(
+    Book,
+    form=BookForm,
+    fields=['date_of_issue'],
+    extra=0,
+    can_delete=False
+)

@@ -1,100 +1,97 @@
-from book.models import Book
 from django import forms
 from django.core.exceptions import ValidationError
-from django.forms import modelformset_factory
+from urllib.parse import urlparse
+import re
+
+from django.forms import formset_factory
+
 from .models import Author
+from book.models import Book
 
 
-class CreateAuthorForm(forms.ModelForm):
-    book_title = forms.CharField(required=False, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    book_source_url = forms.URLField(required=False, widget=forms.URLInput(attrs={'class': 'form-control'}))
-
+class CreateOrUpdateAuthorForm(forms.ModelForm):
     class Meta:
         model = Author
-        fields = ('name', 'surname', 'patronymic', 'author_source_url')
+        fields = ['name', 'surname', 'patronymic', 'source_url']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter author's name"}),
-            'surname': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter surname"}),
-            'patronymic': forms.TextInput(attrs={'class': 'form-control', 'placeholder': "Enter patronymic"}),
-            'author_source_url': forms.URLInput(attrs={'class': 'form-control'}),
-        }
-
-    def clean(self):
-        cleaned_data = super().clean()
-        name = cleaned_data.get('name', '').strip()
-        surname = cleaned_data.get('surname', '').strip()
-        patronymic = cleaned_data.get('patronymic', '').strip()
-
-        if not (name or surname or patronymic):
-            raise ValidationError("Please fill at least one of the fields: name, surname, or patronymic.")
-
-        book_title = cleaned_data.get('book_title', '').strip()
-        book_url = cleaned_data.get('book_source_url', '').strip()
-
-        if book_url and not book_title:
-            self.add_error('book_title', 'Book title is required when book source URL is provided.')
-
-        return cleaned_data
-
-
-
-class EditAuthorForm(forms.ModelForm):
-    class Meta:
-        model = Author
-        fields = ['name', 'surname', 'patronymic', 'author_source_url']
-        widgets = {
-            'name': forms.TextInput(attrs={
-                'class': 'form-control',
-                'readonly': 'readonly',
-            }),
-            'surname': forms.TextInput(attrs={
-                'class': 'form-control',
-                'readonly': 'readonly',
-            }),
-            'patronymic': forms.TextInput(attrs={
-                'class': 'form-control',
-                'readonly': 'readonly',
-            }),
-            'author_source_url': forms.URLInput(attrs={'class': 'form-control'}),
+            'name': forms.TextInput(attrs={'class': 'form-control'}),
+            'surname': forms.TextInput(attrs={'class': 'form-control'}),
+            'patronymic': forms.TextInput(attrs={'class': 'form-control'}),
+            'source_url': forms.URLInput(attrs={'class': 'form-control'}),
         }
         labels = {
             'name': 'First Name',
             'surname': 'Last Name',
             'patronymic': 'Patronymic',
+            'source_url': 'Author Source URL',
         }
 
-    def clean_name(self):
-        return self.instance.name
+    def clean(self):
+        cleaned_data = super().clean()
 
-    def clean_surname(self):
-        return self.instance.surname
+        name = cleaned_data.get('name', '').strip()
+        surname = cleaned_data.get('surname', '').strip()
+        patronymic = cleaned_data.get('patronymic', '').strip()
+        author_url = cleaned_data.get('source_url', '').strip()
 
-    def clean_patronymic(self):
-        return self.instance.patronymic
+        if not (name or surname or patronymic):
+            raise ValidationError("Please fill at least one of the fields: name, surname, or patronymic.")
+
+        for value, field in [(name, 'name'), (surname, 'surname'), (patronymic, 'patronymic')]:
+            if value and re.search(r'\d', value):
+                self.add_error(field, "This field cannot contain digits.")
+
+        cleaned_data['name'] = name.capitalize()
+        cleaned_data['surname'] = surname.capitalize()
+        cleaned_data['patronymic'] = patronymic.capitalize()
+
+        for value, field in [(name, 'name'), (surname, 'surname'), (patronymic, 'patronymic')]:
+            if value and len(value) > 20:
+                self.add_error(field, 'Maximum length is 20 characters.')
+
+        if author_url:
+            parsed = urlparse(author_url)
+            if parsed.scheme not in ['http', 'https'] or not parsed.netloc:
+                self.add_error('source_url', 'Invalid author URL.')
+
+        if name and surname:
+            existing = Author.objects.filter(
+                name__iexact=name,
+                surname__iexact=surname,
+                patronymic__iexact=patronymic or None
+            )
+            if self.instance.pk:
+                existing = existing.exclude(pk=self.instance.pk)
+            if existing.exists():
+                self.add_error(None, "Author with the same name, surname, and patronymic already exists.")
+
+        return cleaned_data
 
 
-class BookForm(forms.ModelForm):
-    class Meta:
-        model = Book
-        fields = ['date_of_issue']
-        widgets = {
-            'date_of_issue': forms.DateInput(
-                attrs={
-                    'type': 'date',
-                    'class': 'form-control',
-                },
-                format='%Y-%m-%d'
-            ),
-        }
-        labels = {
-            'date_of_issue': 'Publication Date',
-        }
+class AuthorBookForm(forms.Form):
+    title = forms.CharField(
+        required=True,
+        max_length=128,
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Book Title'})
+    )
+    source_url = forms.URLField(
+        required=False,
+        max_length=255,
+        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Book Source URL'})
+    )
+
+    def clean_source_url(self):
+        title = self.cleaned_data.get('title', '').strip()
+        url = self.cleaned_data.get('source_url', '').strip()
+
+        if url and not title:
+            self.add_error('title', 'Book title is required when book source URL is provided.')
+
+        if url:
+            parsed = urlparse(url)
+            if parsed.scheme not in ['http', 'https'] or not parsed.netloc:
+                raise forms.ValidationError('Invalid book URL.')
+        return url
 
 
-BookFormSet = modelformset_factory(
-    Book,
-    form=BookForm,
-    fields=['date_of_issue'],
-    extra=0,
-    can_delete=False
-)
+AuthorBookFormSet = formset_factory(AuthorBookForm, extra=1)

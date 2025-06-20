@@ -12,7 +12,8 @@ from book.models import Book
 from django.contrib.admin import SimpleListFilter
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
-from .forms import EditAuthorForm, BookForm
+from .forms import CreateOrUpdateAuthorForm
+from book.forms import BookForm
 
 
 class BookInline(admin.TabularInline):
@@ -121,7 +122,7 @@ class AdminAuthor(admin.ModelAdmin):
         qs = Book.objects.filter(authors=author) if author else Book.objects.none()
 
         if request.method == 'POST':
-            form_class = EditAuthorForm
+            form_class = CreateOrUpdateAuthorForm
             form = form_class(request.POST, instance=author)
             formset = BookFormSet(request.POST, queryset=qs)
 
@@ -131,7 +132,7 @@ class AdminAuthor(admin.ModelAdmin):
                 author.save()
                 return HttpResponseRedirect(reverse('admin:author_author_change', args=[author.pk]))
         else:
-            form_class = EditAuthorForm
+            form_class = CreateOrUpdateAuthorForm
             form = form_class(instance=author)
             formset = BookFormSet(queryset=qs)
 

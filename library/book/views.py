@@ -80,7 +80,7 @@ def user_detail_book(request, user_id):
 
 
 @login_required
-def add_book_view(request, form_url='', extra_context=None):
+def create_book(request, form_url='', extra_context=None):
     extra_context = extra_context or {}
 
     if request.method == 'POST':
@@ -103,3 +103,11 @@ def add_book_view(request, form_url='', extra_context=None):
     })
 
     return super().add_view(request, form_url, extra_context=extra_context)
+
+
+def update_book():
+    return None
+
+
+def delete_book():
+    return None

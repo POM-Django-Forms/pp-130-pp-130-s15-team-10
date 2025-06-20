@@ -19,7 +19,7 @@ class Author(models.Model):
     surname = models.CharField(max_length=20, blank=False, null=False)
     patronymic = models.CharField(max_length=20, default=None, blank=True)
     books = models.ManyToManyField(book.models.Book, related_name='authors')
-    author_source_url = models.URLField(
+    source_url = models.URLField(
         max_length=255,
         blank=True,
         null=True,
@@ -105,7 +105,7 @@ class Author(models.Model):
                name=None,
                surname=None,
                patronymic=None,
-               author_source_url=None):
+               source_url=None):
         """
         Updates author in the database with the specified parameters.\n
         param name: Describes name of the author
@@ -122,8 +122,8 @@ class Author(models.Model):
             self.surname = surname
         if patronymic and len(patronymic) <= 20:
             self.patronymic = patronymic
-        if author_source_url is not None:
-            self.author_source_url = author_source_url
+        if source_url is not None:
+            self.source_url = source_url
         self.save()
 
     @staticmethod
