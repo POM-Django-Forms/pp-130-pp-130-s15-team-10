@@ -1,25 +1,29 @@
-from django.contrib.messages import get_messages
-from django.db import IntegrityError
-from django.shortcuts import render, redirect
-from django.urls import reverse
-from . import models
+from functools import reduce
+from operator import and_
 from authentication.models import CustomUser
-from order.models import Order
+from author.models import Author
+from book.forms import CreateOrUpdateBookForm, AuthorFormSet
+from book.models import Book
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.contrib.messages import get_messages
 from django.core.paginator import Paginator
 from django.db.models import Q
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required, permission_required
-from .forms import AddBookForm, BookSearchForm
-from author.models import Author
-from functools import wraps, reduce
-from operator import and_
+from django.forms.utils import ErrorList
+from django.shortcuts import get_object_or_404, redirect, render
+from order.models import Order
+from django.contrib.auth.decorators import permission_required
+from utils.permissions import required_permissions
+from . import models
+from .forms import BookSearchForm, CreateOrUpdateBookForm, DeleteBookForm, AuthorFormSet
+from .models import Book
 
 
 @login_required
-@permission_required('author.view_book', raise_exception=True)
+@permission_required('book.view_book', raise_exception=True)
 def show_books(request):
     form = BookSearchForm(request.GET or None)
-    books = models.Book.objects.all().prefetch_related('authors')
+    books = models.Book.objects.filter(is_deleted=False).prefetch_related('authors')
     query = ''
 
     if form.is_valid():
@@ -51,7 +55,7 @@ def show_books(request):
     storage = get_messages(request)
     book_messages = [m for m in storage if 'books' in m.tags]
 
-    paginator = Paginator(books, 12)
+    paginator = Paginator(books, 9)
     page_number = request.GET.get("page")
     page_obj = paginator.get_page(page_number)
 
@@ -66,52 +70,101 @@ def show_books(request):
 
 
 @login_required
+@permission_required('book.view_book', raise_exception=True)
 def book_detail(request, book_id):
     book = models.Book.get_by_id(book_id=book_id)
     return render(request, 'book/book_detail.html', {'book': book})
 
 
 @login_required
-def user_detail_book(request, user_id):
+@permission_required('book.view_book', raise_exception=True)
+def user_book(request, user_id):
     user = CustomUser.objects.get(id=user_id)
     books = []
     for i in Order.objects.all():
         if i.user.id == user_id:
             books.append(i.book)
 
-    return render(request, 'book/user_detail_books.html', {'books': books,
-                                                           'user': user})
+    return render(request, 'book/user_book.html', {'books': books,
+                                                   'user': user})
 
 
 @login_required
-def create_book(request, form_url='', extra_context=None):
-    extra_context = extra_context or {}
+@required_permissions(['book.add_book', 'book.change_book'])
+def create_or_update_book(request, book_id=None):
+    book_instance = get_object_or_404(Book, pk=book_id) if book_id else None
 
     if request.method == 'POST':
-        form = AddBookForm(request.POST)
-        if form.is_valid():
-            try:
-                form.save()
-                form.save_m2m()
-                return redirect(reverse('admin:book_book_changelist'))
-            except IntegrityError as e:
-                form.add_error(None, "Book with this name already exists.")
+        form = CreateOrUpdateBookForm(request.POST, instance=book_instance)
+        author_formset = AuthorFormSet(request.POST, prefix='authors')
+
+        if form.is_valid() and author_formset.is_valid():
+            book = form.save(commit=False)
+
+            authors = set()
+            for af in author_formset:
+                if af.cleaned_data.get('DELETE'):
+                    continue
+                author = af.cleaned_data.get('author')
+                if author:
+                    authors.add(author)
+
+            if not authors:
+                author_formset._non_form_errors = ErrorList(["You must select at least one author."])
+
+                return render(request, 'book/create_or_update_book.html', {
+                    'form': form,
+                    'author_formset': author_formset,
+                    'action': 'Update Book' if book_id else 'Create Book',
+                })
+
+            existing_books = Book.objects.filter(
+                name__iexact=book.name.strip(),
+                publication_year=book.publication_year
+            )
+            if book_instance:
+                existing_books = existing_books.exclude(pk=book_instance.pk)
+
+            submitted_authors = set(a.id for a in authors)
+
+            for existing in existing_books:
+                existing_authors = set(existing.authors.values_list('id', flat=True))
+                if existing_authors == submitted_authors:
+                    form.add_error(None, "A book with this title, authors, and publication year already exists")
+                    break
+
+            if not form.errors:
+                book.save()
+                book.authors.set(authors)
+                return redirect('book:show_books')
+
     else:
-        form = AddBookForm()
+        form = CreateOrUpdateBookForm(instance=book_instance)
+        initial_data = [{'author': author.pk} for author in book_instance.authors.all()] if book_instance else []
+        author_formset = AuthorFormSet(initial=initial_data, prefix='authors')
 
-    authors = Author.objects.all()
-
-    extra_context.update({
+    return render(request, 'book/create_or_update_book.html', {
         'form': form,
-        'authors': authors,
+        'author_formset': author_formset,
+        'action': 'Update Book' if book_id else 'Create Book',
     })
 
-    return super().add_view(request, form_url, extra_context=extra_context)
 
+@login_required
+@permission_required('book.delete_book', raise_exception=True)
+def delete_book(request):
+    if request.method == 'POST':
+        form = DeleteBookForm(request.POST)
+        if form.is_valid():
+            book = form.cleaned_data['book']
+            book.is_deleted = True
+            book.save()
+            messages.success(request, f"The book '{book.name}' was successfully marked as deleted.")
+            return redirect('book:show_books')  # заміни на свій url
+    else:
+        form = DeleteBookForm()
 
-def update_book():
-    return None
-
-
-def delete_book():
-    return None
+    return render(request, 'book/delete_book.html', {
+        'form': form,
+        'title': 'Delete Book'
+    })

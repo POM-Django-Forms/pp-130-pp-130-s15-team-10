@@ -1,4 +1,5 @@
 from django.db import models
+from urllib.parse import quote
 
 
 class Book(models.Model):
@@ -15,10 +16,10 @@ class Book(models.Model):
         param authors: list of Authors
         type authors: list->Author
     """
-    name = models.CharField(unique=True, max_length=128)
+    name = models.CharField(max_length=128)
     description = models.CharField(blank=True, max_length=256)
     count = models.IntegerField(default=10)
-    publication_year = models.PositiveIntegerField(blank=True, null=True, verbose_name="Year of Publication")
+    publication_year = models.PositiveIntegerField(verbose_name="Year of Publication")
     source_url = models.URLField(
         max_length=255,
         blank=True,
@@ -27,6 +28,13 @@ class Book(models.Model):
         help_text="Source URL about the book"
     )
     date_of_issue = models.DateField(blank=True, null=True, verbose_name="Date of Issue")
+    is_deleted = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.source_url and self.name:
+            name_encoded = quote(self.name.strip())
+            self.source_url = f"https://en.wikipedia.org/wiki/{name_encoded}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         """

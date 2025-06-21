@@ -1,5 +1,5 @@
 from django.db import models
-
+from urllib.parse import quote
 import book.models
 
 
@@ -27,6 +27,13 @@ class Author(models.Model):
         help_text="Source URL about the author"
     )
     is_deleted = models.BooleanField(default=False)
+
+    def save(self, *args, **kwargs):
+        if not self.source_url and self.name and self.surname:
+            name_encoded = quote(self.name.strip())
+            surname_encoded = quote(self.surname.strip())
+            self.source_url = f"https://en.wikipedia.org/wiki/{name_encoded}_{surname_encoded}"
+        super().save(*args, **kwargs)
 
     def __str__(self):
         """

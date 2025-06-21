@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 import re
 from .models import Author
 from book.models import Book
+from utils.cleaning import clean_str_field
 
 
 class CreateOrUpdateAuthorForm(forms.ModelForm):
@@ -26,10 +27,10 @@ class CreateOrUpdateAuthorForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        name = cleaned_data.get('name', '').strip()
-        surname = cleaned_data.get('surname', '').strip()
-        patronymic = cleaned_data.get('patronymic', '').strip()
-        author_url = cleaned_data.get('source_url', '').strip()
+        name = clean_str_field(cleaned_data.get('name'))
+        surname = clean_str_field(cleaned_data.get('surname'))
+        patronymic = clean_str_field(cleaned_data.get('patronymic'))
+        author_url = clean_str_field(cleaned_data.get('source_url'))
 
         if not (name or surname or patronymic):
             raise ValidationError("Please fill at least one of the fields: name, surname, or patronymic.")
@@ -37,10 +38,6 @@ class CreateOrUpdateAuthorForm(forms.ModelForm):
         for value, field in [(name, 'name'), (surname, 'surname'), (patronymic, 'patronymic')]:
             if value and re.search(r'\d', value):
                 self.add_error(field, "This field cannot contain digits.")
-
-        cleaned_data['name'] = name.capitalize()
-        cleaned_data['surname'] = surname.capitalize()
-        cleaned_data['patronymic'] = patronymic.capitalize()
 
         for value, field in [(name, 'name'), (surname, 'surname'), (patronymic, 'patronymic')]:
             if value and len(value) > 20:
@@ -50,6 +47,8 @@ class CreateOrUpdateAuthorForm(forms.ModelForm):
             parsed = urlparse(author_url)
             if parsed.scheme not in ['http', 'https'] or not parsed.netloc:
                 self.add_error('source_url', 'Invalid author URL.')
+            elif len(author_url) > 255:
+                self.add_error('source_url', 'URL is too long.')
 
         if name and surname:
             existing = Author.objects.filter(
@@ -61,6 +60,10 @@ class CreateOrUpdateAuthorForm(forms.ModelForm):
                 existing = existing.exclude(pk=self.instance.pk)
             if existing.exists():
                 self.add_error(None, "Author with the same name, surname, and patronymic already exists.")
+
+        cleaned_data['name'] = name.capitalize()
+        cleaned_data['surname'] = surname.capitalize()
+        cleaned_data['patronymic'] = patronymic.capitalize()
 
         return cleaned_data
 

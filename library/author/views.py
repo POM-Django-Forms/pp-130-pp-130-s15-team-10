@@ -1,33 +1,20 @@
-from functools import wraps, reduce
+from functools import reduce
 from operator import and_
 from book.models import Book
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.decorators import permission_required
-from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect, render
 from . import models
 from .forms import CreateOrUpdateAuthorForm, AuthorSearchForm, DeleteAuthorForm
 from .models import Author
-
-
-def permissions_required(perms):
-    def decorator(view_func):
-        @wraps(view_func)
-        def _wrapped_view(request, *args, **kwargs):
-            if not all(request.user.has_perm(perm) for perm in perms):
-                raise PermissionDenied
-            return view_func(request, *args, **kwargs)
-
-        return _wrapped_view
-
-    return decorator
+from utils.permissions import required_permissions
 
 
 @login_required
-@permissions_required(['author.add_author', 'author.change_author'])
+@required_permissions(['author.add_author', 'author.change_author'])
 def create_or_update_author(request, author_id=None):
     if author_id:
         author = get_object_or_404(Author, pk=author_id)

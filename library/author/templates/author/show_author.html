@@ -27,19 +27,11 @@
                     {% if author.source_url %}
                     <dt class="col-sm-4">Source URL:</dt>
                     <dd class="col-sm-8">
-                        {% if author.source_url %}
                         <a href="{{ author.source_url }}" class="text-decoration-underline link-primary fw-semibold"
                            target="_blank">
                             {{ author.name }} {{ author.surname }}
                             <i class="bi bi-box-arrow-up-right small"></i>
                         </a>
-                        {% else %}
-                        <a href="https://en.wikipedia.org/wiki/{{ author.name|urlencode }}_{{ author.surname|urlencode }}"
-                           class="text-decoration-underline link-primary fw-semibold" target="_blank">
-                            {{ author.name }} {{ author.surname }}
-                            <i class="bi bi-box-arrow-up-right small"></i>
-                        </a>
-                        {% endif %}
                     </dd>
                     {% endif %}
                 </dl>

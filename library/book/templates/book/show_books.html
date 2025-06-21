@@ -73,16 +73,21 @@
                         </h5>
                         <p class="card-text book-author">
                             <i class="bi bi-person-circle text-primary"></i>
+                            {% if book.authors.exists %}
                             {% for author in book.authors.all %}
                             <span class="badge bg-info text-dark me-1">
-                  {{ author.name }} {{ author.surname }} {{ author.patronymic }}
-                </span>
-                            {% empty %}
-                            <span class="text-muted">Unknown Author</span>
+                                {{ author.name }} {{ author.surname }} {{ author.patronymic }}
+                            </span>
                             {% endfor %}
+                            {% endif %}
                         </p>
-                        <p class="mt-auto">
-                            <span class="badge bg-secondary"><i class="bi bi-stack"></i> Count: {{ book.count }}</span>
+                        <p class="mt-auto d-flex flex-wrap gap-1">
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-calendar3"></i> {{ book.publication_year }}
+                            </span>
+                            <span class="badge bg-secondary">
+                                <i class="bi bi-stack"></i> Count: {{ book.count }}
+                            </span>
                         </p>
                     </div>
                 </div>
@@ -126,5 +131,14 @@
         </ul>
     </nav>
     {% endif %}
+
+    {% if request.user.role %}
+    <hr class="my-4" style="width: 100%; border-top: 2px solid #dee2e6;">
+    <div class="d-flex justify-content-center gap-4">
+        <a href="{% url 'book:create_book' %}" class="btn btn-success">Create book</a>
+        <a href="{% url 'book:delete_book' %}" class="btn btn-danger">Delete book</a>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}

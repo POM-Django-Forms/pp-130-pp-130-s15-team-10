@@ -6,7 +6,7 @@ from django.db.models import Count
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.views.decorators.csrf import csrf_exempt
-from .forms import AddBookForm
+from .forms import CreateOrUpdateBookForm
 from .models import Book
 import plotly.graph_objs as go
 
@@ -34,19 +34,19 @@ class AuthorsFilter(SimpleListFilter):
 
 @admin.register(Book)
 class BookAdmin(admin.ModelAdmin):
-    add_form_template = 'book/add_form_custom.html'
+    add_form_template = 'book/create_or_update_book.html'
 
     def add_view(self, request, form_url='', extra_context=None):
         extra_context = extra_context or {}
 
         if request.method == 'POST':
-            form = AddBookForm(request.POST)
+            form = CreateOrUpdateBookForm(request.POST)
             if form.is_valid():
-                book = form.save()
+                form.save()
                 form.save_m2m()
                 return redirect(reverse('admin:book_book_changelist'))
         else:
-            form = AddBookForm()
+            form = CreateOrUpdateBookForm()
 
         authors = Author.objects.all()
 
