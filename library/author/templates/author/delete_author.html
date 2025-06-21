@@ -1,48 +1,42 @@
 {% extends 'base.html' %}
 
 {% block title %}
-Remove Author
+Delete Author
 {% endblock %}
 
 {% block content %}
 <div class="container my-5">
     {% if request.user.role %}
 
-    {% if deleted_author %}
-    <div class="alert alert-success text-center" role="alert">
-        Successfully deleted author <strong>{{ deleted_author.name }}</strong>!
-    </div>
-    {% endif %}
-
     <div class="container my-5 d-flex justify-content-center">
         <div class="card shadow-sm" style="width: 100%; max-width: 500px;">
+            <div class="card-header bg-danger text-white text-center">
+                {{ action }}
+            </div>
             <div class="card-body bg-light rounded">
-                <form method="post">
+                <form method="post" novalidate>
                     {% csrf_token %}
+                    {{ form.non_field_errors }}
+
                     <div class="mb-3">
-                        <label for="authors-select" class="form-label fw-bold">Choose an author to delete:</label>
-                        <select name="authors" id="authors-select" class="form-select custom-select-lg" required
-                                style="min-height: 48px;">
-                            <option value="">-- Please choose an author --</option>
-                            {% for author in authors %}
-                            <option value="{{ author.id }}" style="padding: 10px 15px; line-height: 1.5;">
-                                {{ author.name }} {{ author.surname }} {{ author.patronymic }}
-                            </option>
-                            {% endfor %}
-                        </select>
+                        {{ form.author.label_tag }}
+                        {{ form.author }}
+                        {% for error in form.author.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
                     </div>
 
                     <div class="text-center">
                         <button type="submit" class="btn btn-danger px-4">Delete Author</button>
                     </div>
+
                     {% if not request.user.is_superuser %}
                     <div class="text-center mt-3">
                         <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary px-4">
                             Go to Authors
                         </a>
                     </div>
-                    {% endif %}
-                    {% if request.user.is_superuser %}
+                    {% else %}
                     <div class="text-center mt-3">
                         <a href="/admin/author/author/" class="btn btn-outline-dark px-4">
                             Go to Authors
@@ -57,21 +51,12 @@ Remove Author
     {% if messages %}
     <div class="container mt-4" style="max-width: 500px;">
         {% for message in messages %}
-        {% if message.tags == 'error' %}
-        {% with alert_class='danger' %}
-        <div class="alert alert-{{ alert_class }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-        {% endwith %}
-        {% else %}
         {% with alert_class=message.tags %}
         <div class="alert alert-{{ alert_class }} alert-dismissible fade show" role="alert">
             {{ message }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
         {% endwith %}
-        {% endif %}
         {% endfor %}
     </div>
     {% endif %}

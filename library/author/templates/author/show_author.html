@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}
+{{ action }}
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="d-flex justify-content-center">
+        <div class="card shadow-sm" style="width: 100%; max-width: 600px;">
+            <div class="card-header bg-primary text-white">
+                Author Info
+            </div>
+            <div class="card-body bg-light rounded">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">First Name:</dt>
+                    <dd class="col-sm-8">{{ author.name }}</dd>
+
+                    <dt class="col-sm-4">Last Name:</dt>
+                    <dd class="col-sm-8">{{ author.surname }}</dd>
+
+                    {% if author.patronymic %}
+                    <dt class="col-sm-4">Patronymic:</dt>
+                    <dd class="col-sm-8">{{ author.patronymic }}</dd>
+                    {% endif %}
+
+                    {% if author.source_url %}
+                    <dt class="col-sm-4">Source URL:</dt>
+                    <dd class="col-sm-8">
+                        <a href="{{ author.source_url }}" target="_blank" class="text-decoration-underline">
+                            {{ author.source_url }}
+                        </a>
+                    </dd>
+                    {% endif %}
+                </dl>
+
+                {% if books %}
+                <h5 class="mt-4">Books by this author</h5>
+                <table class="table table-bordered table-sm">
+                    <tbody>
+                    {% for book in books %}
+                    <tr>
+                        <td style="width: 30px; text-align: center;">{{ forloop.counter }}</td>
+                        <td>
+                            {% if book.source_url %}
+                            <a href="{{ book.source_url }}" target="_blank" class="text-decoration-underline">
+                                {{ book.name }}
+                            </a>
+                            {% else %}
+                            {{ book.name }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="text-muted">No books found for this author.</p>
+                {% endif %}
+
+                <div class="text-center mt-4">
+                    <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary">Back to Authors</a>
+                    {% if perms.author.change_author %}
+                    <a href="{% url 'author:update_author' author_id=author.id %}" class="btn btn-success ms-2">Edit</a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

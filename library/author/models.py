@@ -26,6 +26,7 @@ class Author(models.Model):
         verbose_name="Source URL",
         help_text="Source URL about the author"
     )
+    is_deleted = models.BooleanField(default=False)
 
     def __str__(self):
         """

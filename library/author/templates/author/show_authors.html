@@ -10,10 +10,8 @@ Show all authors
 
     <div class="row mb-4 justify-content-center">
         <div class="col-md-8">
-            <form class="d-flex" method="get" role="search" aria-label="Author search form">
-                <input class="form-control me-2" type="search" name="q"
-                       placeholder="Search by name, surname or patronymic"
-                       value="{{ query|default:'' }}" aria-describedby="searchHelp">
+            <form method="get" class="d-flex" role="search" aria-label="Author search form">
+                {{ form.q }}
                 <button class="btn btn-primary" type="submit">
                     <i class="bi bi-search"></i> Search
                 </button>
@@ -39,10 +37,11 @@ Show all authors
             </thead>
             <tbody id="author-body">
             {% for author in page_obj %}
-            <tr>
-                <td>{{ author.surname }}</td>
-                <td>{{ author.name }}</td>
-                <td>{{ author.patronymic }}</td>
+            <tr onclick="window.location.href='{% url 'author:show_author' author_id=author.id %}'"
+                style="cursor: pointer;">
+                <td style="text-decoration: underline;">{{ author.surname }}</td>
+                <td style="text-decoration: underline;">{{ author.name }}</td>
+                <td style="text-decoration: underline;">{{ author.patronymic }}</td>
             </tr>
             {% endfor %}
             </tbody>

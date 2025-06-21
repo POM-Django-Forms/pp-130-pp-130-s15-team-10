@@ -2,9 +2,6 @@ from django import forms
 from django.core.exceptions import ValidationError
 from urllib.parse import urlparse
 import re
-
-from django.forms import formset_factory
-
 from .models import Author
 from book.models import Book
 
@@ -68,30 +65,30 @@ class CreateOrUpdateAuthorForm(forms.ModelForm):
         return cleaned_data
 
 
-class AuthorBookForm(forms.Form):
-    title = forms.CharField(
-        required=True,
-        max_length=128,
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Book Title'})
-    )
-    source_url = forms.URLField(
+class AuthorSearchForm(forms.Form):
+    q = forms.CharField(
         required=False,
-        max_length=255,
-        widget=forms.URLInput(attrs={'class': 'form-control', 'placeholder': 'Book Source URL'})
+        label='Search',
+        widget=forms.TextInput(attrs={
+            'placeholder': 'Search by name, surname or patronymic',
+            'class': 'form-control me-2',
+            'aria-describedby': 'searchHelp',
+        })
     )
 
-    def clean_source_url(self):
-        title = self.cleaned_data.get('title', '').strip()
-        url = self.cleaned_data.get('source_url', '').strip()
 
-        if url and not title:
-            self.add_error('title', 'Book title is required when book source URL is provided.')
+class DeleteAuthorForm(forms.Form):
+    author = forms.ModelChoiceField(
+        queryset=Author.objects.filter(is_deleted=False),
+        empty_label="-- Please choose an author --",
+        required=True,
+        widget=forms.Select(attrs={
+            'class': 'form-select custom-select-lg',
+            'style': 'min-height: 48px;'
+        }),
+        label='Author',
+    )
 
-        if url:
-            parsed = urlparse(url)
-            if parsed.scheme not in ['http', 'https'] or not parsed.netloc:
-                raise forms.ValidationError('Invalid book URL.')
-        return url
-
-
-AuthorBookFormSet = formset_factory(AuthorBookForm, extra=1)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['author'].label_from_instance = lambda obj: f"{obj.name} {obj.surname} {obj.patronymic}"

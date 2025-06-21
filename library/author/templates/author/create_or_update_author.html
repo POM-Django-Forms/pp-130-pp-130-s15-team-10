@@ -7,14 +7,11 @@
 {% block content %}
 <div class="container my-5">
     {% if request.user.role %}
-    {% if author %}
-    <div class="alert alert-success text-center" role="alert">
-        Successfully added author <strong>{{ author.name }}</strong>!
-    </div>
-    {% endif %}
-
     <div class="container my-5 d-flex justify-content-center">
         <div class="card shadow-sm" style="width: 100%; max-width: 500px;">
+            <div class="card-header bg-success text-white text-center">
+                {{ action }}
+            </div>
             <div class="card-body bg-light rounded">
                 <form method="post" novalidate>
                     {% csrf_token %}
@@ -30,23 +27,28 @@
                     </div>
                     {% endfor %}
 
-                    <h5>Books</h5>
-                    {{ book_formset.management_form }}
-                    <div id="formset-container">
-                        {% for book_form in book_formset %}
-                        <div class="book-form border rounded p-3 mb-3">
-                            {% for field in book_form.visible_fields %}
-                            <div class="mb-2">
-                                {{ field.label_tag }}
-                                {{ field }}
-                                {% for error in field.errors %}
-                                <div class="text-danger small">{{ error }}</div>
-                                {% endfor %}
-                            </div>
-                            {% endfor %}
-                        </div>
+                    {% if author_books and author_books.exists %}
+                    <hr>
+                    <h5>Books by this author</h5>
+                    <table class="table table-bordered table-striped table-sm">
+                        <tbody>
+                        {% for book in author_books %}
+                        <tr>
+                            <td style="width: 30px; text-align: center;">{{ forloop.counter }}</td>
+                            <td>
+                                {% if book.source_url %}
+                                <a href="{{ book.source_url }}" target="_blank" class="text-decoration-underline">
+                                    {{ book.name }}
+                                </a>
+                                {% else %}
+                                {{ book.name }}
+                                {% endif %}
+                            </td>
+                        </tr>
                         {% endfor %}
-                    </div>
+                        </tbody>
+                    </table>
+                    {% endif %}
 
                     <div class="text-center">
                         <button type="submit" class="btn btn-success px-4">{{ action }}</button>
@@ -56,11 +58,9 @@
                     <div class="text-center mt-3">
                         <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary px-4">Go to Authors</a>
                     </div>
-                    {% endif %}
-
-                    {% if request.user.is_superuser %}
+                    {% else %}
                     <div class="text-center mt-3">
-                        <a href="/admin/author/author/" class="btn btn-outline-dark px-4">Go to Authors</a>
+                        <a href="/admin/author/author/" class="btn btn-outline-dark px-4">Go to Admin Authors</a>
                     </div>
                     {% endif %}
                 </form>
