@@ -2,48 +2,51 @@ from django.contrib.messages import get_messages
 from django.db import IntegrityError
 from django.shortcuts import render, redirect
 from django.urls import reverse
-
 from . import models
 from authentication.models import CustomUser
 from order.models import Order
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from .forms import AddBookForm
+from django.contrib.auth.decorators import login_required, permission_required
+from .forms import AddBookForm, BookSearchForm
 from author.models import Author
+from functools import wraps, reduce
+from operator import and_
 
 
 @login_required
+@permission_required('author.view_book', raise_exception=True)
 def show_books(request):
-    query = request.GET.get('q', '').strip()
+    form = BookSearchForm(request.GET or None)
     books = models.Book.objects.all().prefetch_related('authors')
-    filtered = False
+    query = ''
 
-    if query:
-        filtered = True
-        filters = (
-                Q(name__icontains=query) |
-                Q(authors__name__icontains=query) |
-                Q(authors__surname__icontains=query)
-        )
+    if form.is_valid():
+        query = form.cleaned_data.get('q', '').strip()
 
-        full_name_query = query.split()
-        if len(full_name_query) >= 2:
-            first_part = full_name_query[0]
-            last_part = full_name_query[1]
-            filters |= Q(authors__name__icontains=first_part, authors__surname__icontains=last_part)
-            filters |= Q(authors__surname__icontains=first_part, authors__name__icontains=last_part)
+        if query:
+            if query.isdigit():
+                books = books.filter(count=int(query))
+            else:
+                parts = query.split()
 
-        try:
-            filters |= Q(count=int(query))
-        except ValueError:
-            pass
+                combined_filters = [
+                    Q(name__icontains=part) |
+                    Q(authors__name__icontains=part) |
+                    Q(authors__surname__icontains=part) |
+                    Q(authors__patronymic__icontains=part)
+                    for part in parts
+                ]
 
-        books = books.filter(filters).distinct()
+                books = books.filter(reduce(and_, combined_filters)).distinct()
 
-        if not books.exists():
-            messages.error(request, f"No books found for your search: '{query}'")
+            if not books.exists():
+                messages.error(
+                    request,
+                    f"No books found for your search: '{query}'",
+                    extra_tags='books'
+                )
 
     storage = get_messages(request)
     book_messages = [m for m in storage if 'books' in m.tags]
@@ -57,6 +60,7 @@ def show_books(request):
         'page_obj': page_obj,
         'query': query,
         'filtered': bool(query),
+        'form': form,
         'messages': book_messages,
     })
 

@@ -6,23 +6,22 @@
 <div class="container my-4">
     <h1 class="mb-4 text-center"><i class="bi bi-book-half"></i> Book Library</h1>
 
-    <div class="row mb-4">
-        <div class="col-md-8 offset-md-2">
-            <form class="d-flex" action="" method="get">
-                <input class="form-control me-2" type="text" name="q"
-                       placeholder="Search by title or author" value="{{ query }}">
-                <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+    <div class="row mb-4 justify-content-center">
+        <div class="col-md-8">
+            <form method="get" class="d-flex" role="search" aria-label="Book search form">
+                {{ form.q }}
+                <button class="btn btn-primary" type="submit">
+                    <i class="bi bi-search"></i> Search
+                </button>
+                {% if query %}
+                <a href="{% url 'book:show_books' %}" class="btn btn-outline-secondary ms-2" role="button"
+                   aria-label="Clear search">
+                    <i class="bi bi-x-circle me-1"></i> Clear
+                </a>
+                {% endif %}
             </form>
         </div>
     </div>
-
-    {% if filtered %}
-    <div class="row mb-3">
-        <div class="col-md-8 offset-md-2 text-end">
-            <a href="{% url 'book:show_books' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
-        </div>
-    </div>
-    {% endif %}
 
     {% for message in messages %}
     {% if message.tags == 'error' %}
@@ -76,7 +75,7 @@
                             <i class="bi bi-person-circle text-primary"></i>
                             {% for author in book.authors.all %}
                             <span class="badge bg-info text-dark me-1">
-                  {{ author.name }} {{ author.surname }}
+                  {{ author.name }} {{ author.surname }} {{ author.patronymic }}
                 </span>
                             {% empty %}
                             <span class="text-muted">Unknown Author</span>

@@ -1,8 +1,18 @@
 from django import forms
 from django.forms import modelformset_factory
-
 from .models import Book
 from author.models import Author
+
+
+class BookSearchForm(forms.Form):
+    q = forms.CharField(
+        required=False,
+        label='',
+        widget=forms.TextInput(attrs={
+            'class': 'form-control me-2',
+            'placeholder': 'Search by title, author or count'
+        })
+    )
 
 
 class AddBookForm(forms.ModelForm):

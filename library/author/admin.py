@@ -13,7 +13,6 @@ from django.contrib.admin import SimpleListFilter
 from django.db.models import Q, Value
 from django.db.models.functions import Concat
 from .forms import CreateOrUpdateAuthorForm
-from book.forms import BookForm
 
 
 class BookInline(admin.TabularInline):
@@ -107,8 +106,7 @@ class PublicationYearFilter(SimpleListFilter):
 @admin.register(Author)
 class AdminAuthor(admin.ModelAdmin):
     actions = None
-    change_form_template = "author/edit_author.html"
-    filter_vertical = ['books']
+    change_form_template = "author/create_or_update_author.html"
 
     @csrf_exempt
     def changeform_view(self, request, object_id=None, form_url='', extra_context=None):
@@ -118,28 +116,24 @@ class AdminAuthor(admin.ModelAdmin):
         if object_id:
             author = get_object_or_404(Author, pk=object_id)
 
-        BookFormSet = modelformset_factory(Book, form=BookForm, fields=['date_of_issue'], extra=0, can_delete=False)
-        qs = Book.objects.filter(authors=author) if author else Book.objects.none()
-
         if request.method == 'POST':
-            form_class = CreateOrUpdateAuthorForm
-            form = form_class(request.POST, instance=author)
-            formset = BookFormSet(request.POST, queryset=qs)
+            form = CreateOrUpdateAuthorForm(request.POST, instance=author)
 
             if form.is_valid():
                 author = form.save(commit=False)
-                author.author_source_url = form.cleaned_data['author_source_url']
+                author.source_url = form.cleaned_data['source_url']
                 author.save()
                 return HttpResponseRedirect(reverse('admin:author_author_change', args=[author.pk]))
         else:
-            form_class = CreateOrUpdateAuthorForm
-            form = form_class(instance=author)
-            formset = BookFormSet(queryset=qs)
+            form = CreateOrUpdateAuthorForm(instance=author)
+
+        author_books = author.books.all() if author else []
 
         extra_context.update({
             'form': form,
-            'formset': formset,
             'author': author,
+            'author_books': author_books,
+            'action': 'Update Author'
         })
 
         return super().changeform_view(request, object_id, form_url, extra_context=extra_context)
