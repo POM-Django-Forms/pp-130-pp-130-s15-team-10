@@ -104,10 +104,11 @@ def create_order(request):
     if request.user.role == 1:
         return redirect('order:all_orders')
 
-    books = get_books_not_ordered_by_user(request.user)
+    books = get_books_not_ordered_by_user(request.user).filter(is_deleted=False)
 
     if request.method == 'POST':
         form = OrderCreateForm(request.POST)
+
         if form.is_valid():
             form.instance.user = request.user
 
@@ -118,13 +119,14 @@ def create_order(request):
             try:
                 order = form.save(commit=False)
                 order.created_at = timezone.now()
+
                 order.plated_end_at = order.created_at + timedelta(days=form.cleaned_data['term'])
                 order.save()
 
                 books = get_books_not_ordered_by_user(request.user)
+
                 form = OrderCreateForm()
                 return render(request, 'order/create_order.html', {'form': form, 'books': books})
-
             except Exception as e:
                 messages.error(request, f"An error occurred: {str(e)}")
                 return render(request, 'order/create_order.html', {'form': form, 'books': books})
