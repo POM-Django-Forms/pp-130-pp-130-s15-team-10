@@ -40,7 +40,6 @@ def create_or_update_author(request, author_id=None):
 
 
 @login_required
-@permission_required('author.view_author', raise_exception=True)
 def show_authors(request):
     form = AuthorSearchForm(request.GET or None)
     query = ''

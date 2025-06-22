@@ -1,44 +1,36 @@
 from django import forms
 from .models import Order
-
-
-class OrderAdminForm(forms.ModelForm):
-    class Meta:
-        model = Order
-        fields = '__all__'
-        widgets = {
-            'created_at': forms.DateTimeInput(format='%Y-%m-%dT%H:%M',
-                                              attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'plated_end_at': forms.DateTimeInput(format='%Y-%m-%dT%H:%M',
-                                                 attrs={'type': 'datetime-local', 'class': 'form-control'}),
-            'end_at': forms.DateTimeInput(format='%Y-%m-%dT%H:%M',
-                                          attrs={'type': 'datetime-local', 'class': 'form-control'}),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            if not isinstance(field.widget, forms.CheckboxInput):
-                field.widget.attrs['class'] = 'form-control'
+from book.models import Book
 
 
 class OrderSearchForm(forms.Form):
     q = forms.CharField(
         required=False,
-        label='Search',
         widget=forms.TextInput(attrs={
+            'class': 'form-control me-2 flex-grow-1',
+            'type': 'search',
+            'name': 'q',
             'placeholder': 'Search by Order ID, Date, Book, Author, User Email or Name',
-            'class': 'form-control me-2',
             'aria-describedby': 'searchHelp',
-        }),
+        })
     )
 
 
 class CloseOrdersForm(forms.Form):
-    selected_orders = forms.ModelMultipleChoiceField(
-        queryset=None,
-        widget=forms.CheckboxSelectMultiple,
+    selected_orders = forms.MultipleChoiceField(
         required=False,
+        widget=forms.MultipleHiddenInput()
     )
-    page = forms.IntegerField(widget=forms.HiddenInput(), required=False)
-    q = forms.CharField(widget=forms.HiddenInput(), required=False)
+
+
+class OrderCreateForm(forms.Form):
+    user = forms.CharField(widget=forms.HiddenInput())
+    book = forms.ModelChoiceField(queryset=Book.objects.all(), label="Select Book", empty_label="Please choose a book")
+    term = forms.IntegerField(min_value=1, label="Order Duration (days)",
+                              widget=forms.NumberInput(attrs={'placeholder': 'Enter number of days'}))
+
+    def clean_term(self):
+        term = self.cleaned_data.get('term')
+        if term <= 0:
+            raise forms.ValidationError("Term must be greater than 0.")
+        return term

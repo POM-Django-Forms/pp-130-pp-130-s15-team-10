@@ -20,7 +20,6 @@ from .models import Book
 
 
 @login_required
-@permission_required('book.view_book', raise_exception=True)
 def show_books(request):
     form = BookSearchForm(request.GET or None)
     books = models.Book.objects.filter(is_deleted=False).prefetch_related('authors')
@@ -70,23 +69,9 @@ def show_books(request):
 
 
 @login_required
-@permission_required('book.view_book', raise_exception=True)
 def book_detail(request, book_id):
     book = models.Book.get_by_id(book_id=book_id)
     return render(request, 'book/book_detail.html', {'book': book})
-
-
-@login_required
-@permission_required('book.view_book', raise_exception=True)
-def user_book(request, user_id):
-    user = CustomUser.objects.get(id=user_id)
-    books = []
-    for i in Order.objects.all():
-        if i.user.id == user_id:
-            books.append(i.book)
-
-    return render(request, 'book/user_book.html', {'books': books,
-                                                   'user': user})
 
 
 @login_required

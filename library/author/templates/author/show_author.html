@@ -61,16 +61,10 @@
                 {% endif %}
 
                 <div class="text-center mt-4">
-                    {% if request.META.HTTP_REFERER and "/order/order/" in request.META.HTTP_REFERER %}
-                    <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-outline-primary">
-                        <i class="bi bi-arrow-left"></i> Back to Order
-                    </a>
-                    {% else %}
-                    <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary">Back to Authors</a>
                     {% if perms.author.change_author %}
-                    <a href="{% url 'author:update_author' author_id=author.id %}" class="btn btn-success ms-2">Edit</a>
+                    <a href="{% url 'author:update_author' author_id=author.id %}" class="btn btn-success ms-2">Update</a>
                     {% endif %}
-                    {% endif %}
+                    <a href="{% url 'author:show_authors' %}" class="btn btn-outline-primary">Back to Authors</a>
                 </div>
             </div>
         </div>

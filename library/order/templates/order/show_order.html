@@ -10,56 +10,89 @@
 
     <div class="row">
         <div class="col-md-8 offset-md-2">
-            <div class="card shadow-sm border-primary">
+            <div class="card shadow-sm border-primary mb-4">
                 <div class="card-body">
-                    <h5 class="card-title text-success">
+                    <h5 class="card-title text-success mb-3">
                         <i class="bi bi-book me-2"></i> Book:
-                        <a href="{% url 'book:book_detail' order.book.id %}" class="text-decoration-none">{{ order.book.name }}</a>
+                        <a href="{{ order.book.source_url }}" class="text-decoration-none">
+                            {{ order.book.name }}
+                        </a>
                     </h5>
 
-                    <p class="card-text">
+                    <p class="card-text mb-3">
                         <strong>Author(s):</strong>
                         {% for author in order.book.authors.all %}
-                            <a href="{% url 'author:show_author' author.id %}" class="badge bg-info text-dark">{{ author.name }} {{ author.surname }}</a>{% if not forloop.last %}, {% endif %}
-                        {% empty %}
-                            <span class="text-muted">Unknown</span>
+                        <a href="{{ author.source_url }}" class="badge bg-info text-dark">
+                            {{ author.name }} {{ author.surname }}
+                        </a>
                         {% endfor %}
                     </p>
+                    <span class="badge bg-warning text-dark mb-3">
+                        <i class="bi bi-calendar3"></i> {{ order.book.publication_year }}
+                    </span>
 
-                    <p class="card-text">
+                    <p class="card-text mb-3">
                         <strong>User:</strong>
-                        <a href="{% url 'authentication:specific_user' order.user.id %}" class="text-decoration-none text-primary">
+                        <a href="{% url 'authentication:specific_user' order.user.id %}"
+                           class="text-decoration-none text-primary">
                             {{ order.user.first_name }} {{ order.user.last_name }}
                         </a><br>
                         <small class="text-muted">{{ order.user.email }}</small>
                     </p>
 
-                    <p class="card-text">
+                    <p class="card-text mb-3">
                         <strong>Order Created At:</strong>
                         <span class="badge bg-secondary">{{ order.created_at|date:"d M Y H:i" }}</span>
                     </p>
-                    <p class="card-text">
+
+                    <p class="card-text mb-3">
                         <strong>Planned Return:</strong>
                         <span class="badge bg-warning text-dark">{{ order.plated_end_at|date:"d M Y" }}</span>
                     </p>
 
-                    <p class="card-text">
+                    <p class="card-text mb-3">
                         <strong>Actual Return:</strong>
                         {% if order.end_at %}
-                            <span class="badge bg-success">{{ order.end_at|date:"d M Y" }}</span>
+                        <span class="badge bg-success">{{ order.end_at|date:"d M Y" }}</span>
                         {% else %}
-                            <span class="badge bg-danger">Not returned</span>
+                        <span class="badge bg-danger">Not returned</span>
                         {% endif %}
                     </p>
 
-                    <p class="card-text">
+                    <p class="card-text mb-3">
                         <strong>Penalty:</strong>
                         <span class="badge bg-danger">${{ order.penalty|floatformat:2 }}</span>
                     </p>
 
-                    <a href="{% url 'order:all_orders' %}" class="btn btn-outline-primary mt-3">
-                        <i class="bi bi-arrow-left me-2"></i> Back to Orders
-                    </a>
+                    {% if request.user.is_superuser or request.user.role == 1 %}
+                    {% if not order.end_at %}
+                    <div class="d-flex justify-content-center gap-3 mt-4">
+                        <form method="POST" action="{% url 'order:close_order' order.id %}">
+                            {% csrf_token %}
+                            {{ form.order_id }}
+                            <button type="submit" class="btn btn-danger shadow-sm" id="close-button">
+                                <i class="bi bi-x-circle me-2"></i> Close Order
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="text-center mt-4">
+                        <span class="badge bg-success">Order is already closed</span>
+                    </div>
+                    {% endif %}
+                    {% endif %}
+
+                    {% if not request.user.is_superuser %}
+                    <div class="text-center mt-3">
+                        <a href="{% url 'order:all_orders' %}" class="btn btn-outline-primary mt-3">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Orders
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="text-center mt-3">
+                        <a href="/admin/order/order/" class="btn btn-outline-dark px-4">Back to Admin Orders</a>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
         </div>

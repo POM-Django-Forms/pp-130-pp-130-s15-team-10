@@ -1,5 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block title %}All Orders{% endblock %}
 
 {% block content %}
@@ -10,8 +11,10 @@
 
     <div class="row mb-4 justify-content-center">
         <div class="col-md-8">
-            <form method="get" role="search" aria-label="Order search form" class="d-flex">
-                {{ form.q }}
+            <form class="d-flex" method="get" role="search" aria-label="Order search form">
+                <input class="form-control me-2" type="search" name="q"
+                       placeholder="Search by Order ID, Date, Book, Author, User Email or Name"
+                       value="{{ query|default:'' }}" aria-describedby="searchHelp">
                 <button class="btn btn-primary" type="submit">
                     <i class="bi bi-search"></i> Search
                 </button>
@@ -29,10 +32,10 @@
     </div>
 
     {% if orders %}
-    <form id="close-form" method="post" action="{% url 'order:close_order' %}">
+    <form id="close-form" method="post" action="{% url 'order:close_orders' %}">
         {% csrf_token %}
-        {{ form.page }}
-
+        <input type="hidden" name="page" value="{{ page_obj.number }}">
+        <input type="hidden" name="q" value="{{ query|default:'' }}">
         <div class="table-responsive shadow-sm rounded p-3">
             <table class="table table-striped table-bordered align-middle text-center w-100">
                 <thead class="table-light">
@@ -50,7 +53,7 @@
                 </thead>
                 <tbody>
                 {% for order in orders %}
-<tr>
+                <tr>
                     <td>
                         <input type="checkbox" name="selected_orders" value="{{ order.id }}">
                     </td>
@@ -74,12 +77,8 @@
                     </td>
                     <td>${{ order.penalty|floatformat:2 }}</td>
                     <td>
-                        {% if order.user %}
                         {{ order.user.first_name }} {{ order.user.middle_name }} {{ order.user.last_name }}<br>
                         <small class="text-muted">{{ order.user.email }}</small>
-                        {% else %}
-                        <span class="text-muted">Unknown user</span>
-                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}
@@ -93,7 +92,6 @@
             </button>
         </div>
     </form>
-
     {% else %}
     <div class="row">
         <div class="col-md-8 offset-md-2">

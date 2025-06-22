@@ -1,67 +1,73 @@
 import datetime
+from datetime import datetime
 from datetime import timedelta
 from book.models import Book
 from django.contrib import messages
-from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import permission_required
+from django.core.paginator import Paginator
+from django.db.models import Q
+from django.shortcuts import redirect
+from django.shortcuts import render, get_object_or_404
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views import View
-from .forms import OrderAdminForm, OrderSearchForm, CloseOrdersForm
+from .forms import OrderSearchForm, CloseOrdersForm, OrderCreateForm
 from .models import Order
-from datetime import datetime
-from django.db.models import Q
-from django.core.paginator import Paginator
-from django.db import IntegrityError
-from django.contrib.auth.decorators import login_required, permission_required
 
 
 @login_required
 @permission_required('order.view_order', raise_exception=True)
 def all_orders(request):
-    form = OrderSearchForm(request.GET or None)
-    query = ''
-    orders = Order.objects.select_related('user', 'book').prefetch_related('book__authors').all()
+    query = request.GET.get('q', '').strip()
+    orders = Order.objects.select_related('user', 'book').prefetch_related('book__authors').all().order_by("-id")
 
-    if form.is_valid():
-        query = form.cleaned_data.get('q', '').strip()
+    q_filters = Q(id__iexact=query) | \
+                Q(book__name__icontains=query) | \
+                Q(book__authors__name__icontains=query) | \
+                Q(book__authors__surname__icontains=query) | \
+                Q(user__email__icontains=query) | \
+                Q(user__first_name__icontains=query) | \
+                Q(user__last_name__icontains=query)
 
-        def is_valid_date(date_str):
-            try:
-                datetime.strptime(date_str, '%Y-%m-%d')
-                return True
-            except ValueError:
-                return False
+    if ' ' in query:
+        first, last = query.split(' ', 1)
+        q_filters |= Q(user__first_name__icontains=first) & Q(user__last_name__icontains=last)
 
-        if query:
-            q_filters = Q(id__iexact=query) | \
-                        Q(book__name__icontains=query) | \
-                        Q(book__authors__name__icontains=query) | \
-                        Q(book__authors__surname__icontains=query) | \
-                        Q(user__email__icontains=query) | \
-                        Q(user__first_name__icontains=query) | \
-                        Q(user__last_name__icontains=query)
+    if ' ' in query:
+        first, last = query.split(' ', 1)
+        q_filters |= Q(book__authors__name__icontains=first) & Q(book__authors__surname__icontains=last)
 
-            if ' ' in query:
-                first, last = query.split(' ', 1)
-                q_filters |= Q(user__first_name__icontains=first) & Q(user__last_name__icontains=last)
-                q_filters |= Q(book__authors__name__icontains=first) & Q(book__authors__surname__icontains=last)
+    def is_valid_date(date_str):
+        try:
+            datetime.strptime(date_str, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
 
-            if is_valid_date(query):
-                q_filters |= Q(created_at__date=query)
+    if is_valid_date(query):
+        q_filters |= Q(created_at__date=query)
 
-            orders = orders.filter(q_filters).distinct('id')
+    orders = orders.filter(q_filters).distinct('id')
 
     paginator = Paginator(orders, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    choices = [(str(order.id), str(order.id)) for order in page_obj.object_list]
+
+    search_form = OrderSearchForm(request.GET or None)
+    close_orders_form = CloseOrdersForm()
+    close_orders_form.fields['selected_orders'].choices = choices  # Встановлюємо choices для форми
+
     context = {
-        'form': form,
         'orders': page_obj.object_list,
         'page_obj': page_obj,
+        'search_form': search_form,
+        'close_orders_form': close_orders_form,
         'query': query,
+        'filtered': bool(query),
     }
+
     return render(request, 'order/all_orders.html', context)
 
 
@@ -74,8 +80,8 @@ def show_order(request, id):
     }
     return render(request, 'order/show_order.html', context)
 
+
 @login_required
-@permission_required('order.view_order', raise_exception=True)
 def show_own_orders(request):
     if request.user.is_authenticated:
         orders = Order.objects.filter(user=request.user).select_related('book')
@@ -87,112 +93,93 @@ def show_own_orders(request):
 def user_already_ordered_this_book(user, book_id):
     return Order.objects.filter(user=user, book_id=book_id, end_at__isnull=True).exists()
 
+
 def get_books_not_ordered_by_user(user):
     active_ordered_books = Order.objects.filter(user=user, end_at__isnull=True).values_list('book_id', flat=True)
     return Book.objects.exclude(id__in=active_ordered_books)
 
 
 @login_required
-@permission_required('order.add_order', raise_exception=True)
 def create_order(request):
-    if not request.user.is_authenticated:
-        messages.error(request, "You must be logged in to create an order.")
-        return redirect('login')
-
-    if request.user.role:
-        messages.error(request, "Only users without librarian role can create orders.")
-        return redirect('some_page')
+    if request.user.role == 1:
+        return redirect('order:all_orders')
 
     books = get_books_not_ordered_by_user(request.user)
 
     if request.method == 'POST':
-        book_id = request.POST.get('book')
-        term_days = request.POST.get('term')
+        form = OrderCreateForm(request.POST)
+        if form.is_valid():
+            form.instance.user = request.user
 
-        if not book_id or not term_days:
-            messages.error(request, "Please select a book and enter the term.")
-            return render(request, 'order/create_order.html', {'books': books})
+            if user_already_ordered_this_book(request.user, form.cleaned_data['book']):
+                messages.error(request, "You cannot order the same book twice.")
+                return render(request, 'order/create_order.html', {'form': form, 'books': books})
 
-        if user_already_ordered_this_book(request.user, book_id):
-            messages.error(request, "You cannot order the same book twice.")
-            return render(request, 'order/create_order.html', {'books': books})
+            try:
+                order = form.save(commit=False)
+                order.created_at = timezone.now()
+                order.plated_end_at = order.created_at + timedelta(days=form.cleaned_data['term'])
+                order.save()
 
-        try:
-            book = Book.objects.get(pk=book_id)
-            term_days = int(term_days)
-            if term_days <= 0:
-                raise ValueError("Term must be greater than 0.")
+                books = get_books_not_ordered_by_user(request.user)
+                form = OrderCreateForm()
+                return render(request, 'order/create_order.html', {'form': form, 'books': books})
 
-            created_at = timezone.now()
-            plated_end_at = created_at + timedelta(days=term_days)
+            except Exception as e:
+                messages.error(request, f"An error occurred: {str(e)}")
+                return render(request, 'order/create_order.html', {'form': form, 'books': books})
 
-            order = Order.objects.create(
-                user=request.user,
-                book=book,
-                created_at=created_at,
-                plated_end_at=plated_end_at
-            )
-
-            messages.success(request, f"Order #{order.id} created successfully!")
-
-            books = get_books_not_ordered_by_user(request.user)
-            return render(request, 'order/create_order.html', {'books': books})
-
-        except IntegrityError:
-            messages.error(request, "You have already ordered this book.")
-        except ValueError:
-            messages.error(request, "Invalid term value.")
-        except Exception as e:
-            messages.error(request, f"An error occurred: {str(e)}")
-
-        return render(request, 'order/create_order.html', {'books': books})
+    else:
+        form = OrderCreateForm()
 
     if not books.exists():
         messages.warning(request, "You have already ordered all available books.")
 
-    return render(request, 'order/create_order.html', {'books': books})
+    return render(request, 'order/create_order.html', {'form': form, 'books': books})
 
 
 @login_required
-@permission_required('order.change_order', raise_exception=True)
-def close_order(request):
+def close_orders(request):
+    if not (request.user.is_superuser or request.user.role == 1):
+        return redirect('order:all_orders')
+
     if request.method == 'POST':
-        form = CloseOrdersForm(request.POST)
-        form.fields['selected_orders'].queryset = Order.objects.filter(end_at__isnull=True)
+        selected_ids = request.POST.getlist('selected_orders')
+        page = request.POST.get('page', '1')
+        q = request.POST.get('q', '')
 
-        if form.is_valid():
-            selected_orders = form.cleaned_data['selected_orders']
-            page = form.cleaned_data.get('page', 1)
-            q = form.cleaned_data.get('q', '')
+        if selected_ids:
+            orders = Order.objects.filter(id__in=selected_ids, end_at__isnull=True)
+            count = orders.update(end_at=timezone.now())
+            messages.success(request, f"{count} order(s) successfully closed.")
+        else:
+            messages.warning(request, "No orders were selected.")
 
-            if selected_orders:
-                count = selected_orders.update(end_at=timezone.now())
-                messages.success(request, f"{count} order(s) successfully closed.")
-            else:
-                messages.warning(request, "No orders were selected.")
+        base_url = reverse('order:all_orders')
+        query_params = f"?page={page}"
+        if q:
+            query_params += f"&q={q}"
 
-            base_url = reverse('order:all_orders')
-            query_params = f"?page={page}"
-            if q:
-                query_params += f"&q={q}"
-            return redirect(f"{base_url}{query_params}")
+        return redirect(f"{base_url}{query_params}")
 
     return redirect('order:all_orders')
 
 
-@method_decorator(login_required, name='dispatch')
-class UpdateOrderView(View):
-    template_name = 'order/update_order.html'
+@login_required
+def close_order(request, id):
+    if not (request.user.is_superuser or request.user.role == 1):
+        return redirect('order:show_order')
+    order = get_object_or_404(Order, id=id)
+    if request.method == 'POST':
+        form = CloseOrdersForm(request.POST)
 
-    def get(self, request, order_id):
-        order = get_object_or_404(Order, pk=order_id)
-        form = OrderAdminForm(instance=order)
-        return render(request, self.template_name, {'form': form, 'order': order})
-
-    def post(self, request, order_id):
-        order = get_object_or_404(Order, pk=order_id)
-        form = OrderAdminForm(request.POST, instance=order)
         if form.is_valid():
-            form.save()
-            return redirect(reverse('order:update_order', args=[order_id]))
-        return render(request, self.template_name, {'form': form, 'order': order})
+            if order.end_at:
+                return redirect('order:show_order', id=order.id)
+
+            order.update(end_at=timezone.now())
+            return redirect('order:show_order', id=order.id)
+
+        return redirect('order:show_order', id=order.id)
+
+    return redirect('order:all_orders')
