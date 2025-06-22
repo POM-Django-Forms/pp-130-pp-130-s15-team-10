@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block title %}Order #{{ order.id }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4 text-primary text-center">
+        <i class="bi bi-info-circle me-2"></i> Order #{{ order.id }}
+    </h2>
+
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm border-primary">
+                <div class="card-body">
+                    <h5 class="card-title text-success">
+                        <i class="bi bi-book me-2"></i> Book:
+                        <a href="{% url 'book:book_detail' order.book.id %}" class="text-decoration-none">{{ order.book.name }}</a>
+                    </h5>
+
+                    <p class="card-text">
+                        <strong>Author(s):</strong>
+                        {% for author in order.book.authors.all %}
+                            <a href="{% url 'author:show_author' author.id %}" class="badge bg-info text-dark">{{ author.name }} {{ author.surname }}</a>{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            <span class="text-muted">Unknown</span>
+                        {% endfor %}
+                    </p>
+
+                    <p class="card-text">
+                        <strong>User:</strong>
+                        <a href="{% url 'authentication:specific_user' order.user.id %}" class="text-decoration-none text-primary">
+                            {{ order.user.first_name }} {{ order.user.last_name }}
+                        </a><br>
+                        <small class="text-muted">{{ order.user.email }}</small>
+                    </p>
+
+                    <p class="card-text">
+                        <strong>Order Created At:</strong>
+                        <span class="badge bg-secondary">{{ order.created_at|date:"d M Y H:i" }}</span>
+                    </p>
+                    <p class="card-text">
+                        <strong>Planned Return:</strong>
+                        <span class="badge bg-warning text-dark">{{ order.plated_end_at|date:"d M Y" }}</span>
+                    </p>
+
+                    <p class="card-text">
+                        <strong>Actual Return:</strong>
+                        {% if order.end_at %}
+                            <span class="badge bg-success">{{ order.end_at|date:"d M Y" }}</span>
+                        {% else %}
+                            <span class="badge bg-danger">Not returned</span>
+                        {% endif %}
+                    </p>
+
+                    <p class="card-text">
+                        <strong>Penalty:</strong>
+                        <span class="badge bg-danger">${{ order.penalty|floatformat:2 }}</span>
+                    </p>
+
+                    <a href="{% url 'order:all_orders' %}" class="btn btn-outline-primary mt-3">
+                        <i class="bi bi-arrow-left me-2"></i> Back to Orders
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

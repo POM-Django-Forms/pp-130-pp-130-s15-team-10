@@ -7,63 +7,75 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.views import View
-
-from .forms import OrderAdminForm
+from .forms import OrderAdminForm, OrderSearchForm, CloseOrdersForm
 from .models import Order
 from datetime import datetime
 from django.db.models import Q
 from django.core.paginator import Paginator
 from django.db import IntegrityError
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, permission_required
 
 
 @login_required
+@permission_required('order.view_order', raise_exception=True)
 def all_orders(request):
-    query = request.GET.get('q', '').strip()
+    form = OrderSearchForm(request.GET or None)
+    query = ''
     orders = Order.objects.select_related('user', 'book').prefetch_related('book__authors').all()
 
-    def is_valid_date(date_str):
-        try:
-            datetime.strptime(date_str, '%Y-%m-%d')
-            return True
-        except ValueError:
-            return False
+    if form.is_valid():
+        query = form.cleaned_data.get('q', '').strip()
 
-    q_filters = Q(id__iexact=query) | \
-                Q(book__name__icontains=query) | \
-                Q(book__authors__name__icontains=query) | \
-                Q(book__authors__surname__icontains=query) | \
-                Q(user__email__icontains=query) | \
-                Q(user__first_name__icontains=query) | \
-                Q(user__last_name__icontains=query)
+        def is_valid_date(date_str):
+            try:
+                datetime.strptime(date_str, '%Y-%m-%d')
+                return True
+            except ValueError:
+                return False
 
-    if ' ' in query:
-        first, last = query.split(' ', 1)
-        q_filters |= Q(user__first_name__icontains=first) & Q(user__last_name__icontains=last)
+        if query:
+            q_filters = Q(id__iexact=query) | \
+                        Q(book__name__icontains=query) | \
+                        Q(book__authors__name__icontains=query) | \
+                        Q(book__authors__surname__icontains=query) | \
+                        Q(user__email__icontains=query) | \
+                        Q(user__first_name__icontains=query) | \
+                        Q(user__last_name__icontains=query)
 
-    if ' ' in query:
-        first, last = query.split(' ', 1)
-        q_filters |= Q(book__authors__name__icontains=first) & Q(book__authors__surname__icontains=last)
+            if ' ' in query:
+                first, last = query.split(' ', 1)
+                q_filters |= Q(user__first_name__icontains=first) & Q(user__last_name__icontains=last)
+                q_filters |= Q(book__authors__name__icontains=first) & Q(book__authors__surname__icontains=last)
 
-    if is_valid_date(query):
-        q_filters |= Q(created_at__date=query)
+            if is_valid_date(query):
+                q_filters |= Q(created_at__date=query)
 
-    orders = orders.filter(q_filters).distinct('id')
+            orders = orders.filter(q_filters).distinct('id')
 
     paginator = Paginator(orders, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
     context = {
+        'form': form,
         'orders': page_obj.object_list,
         'page_obj': page_obj,
         'query': query,
-        'filtered': bool(query),
     }
     return render(request, 'order/all_orders.html', context)
 
 
 @login_required
+@permission_required('order.view_order', raise_exception=True)
+def show_order(request, id):
+    order = get_object_or_404(Order, id=id)
+    context = {
+        'order': order,
+    }
+    return render(request, 'order/show_order.html', context)
+
+@login_required
+@permission_required('order.view_order', raise_exception=True)
 def show_own_orders(request):
     if request.user.is_authenticated:
         orders = Order.objects.filter(user=request.user).select_related('book')
@@ -81,6 +93,7 @@ def get_books_not_ordered_by_user(user):
 
 
 @login_required
+@permission_required('order.add_order', raise_exception=True)
 def create_order(request):
     if not request.user.is_authenticated:
         messages.error(request, "You must be logged in to create an order.")
@@ -141,25 +154,28 @@ def create_order(request):
 
 
 @login_required
+@permission_required('order.change_order', raise_exception=True)
 def close_order(request):
     if request.method == 'POST':
-        selected_ids = request.POST.getlist('selected_orders')
-        page = request.POST.get('page', '1')
-        q = request.POST.get('q', '')
+        form = CloseOrdersForm(request.POST)
+        form.fields['selected_orders'].queryset = Order.objects.filter(end_at__isnull=True)
 
-        if selected_ids:
-            orders = Order.objects.filter(id__in=selected_ids, end_at__isnull=True)
-            count = orders.update(end_at=timezone.now())
-            messages.success(request, f"{count} order(s) successfully closed.")
-        else:
-            messages.warning(request, "No orders were selected.")
+        if form.is_valid():
+            selected_orders = form.cleaned_data['selected_orders']
+            page = form.cleaned_data.get('page', 1)
+            q = form.cleaned_data.get('q', '')
 
-        base_url = reverse('order:all_orders')
-        query_params = f"?page={page}"
-        if q:
-            query_params += f"&q={q}"
+            if selected_orders:
+                count = selected_orders.update(end_at=timezone.now())
+                messages.success(request, f"{count} order(s) successfully closed.")
+            else:
+                messages.warning(request, "No orders were selected.")
 
-        return redirect(f"{base_url}{query_params}")
+            base_url = reverse('order:all_orders')
+            query_params = f"?page={page}"
+            if q:
+                query_params += f"&q={q}"
+            return redirect(f"{base_url}{query_params}")
 
     return redirect('order:all_orders')
 

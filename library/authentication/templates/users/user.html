@@ -67,9 +67,15 @@
             {% endif %}
 
             <div class="text-end mt-4">
-                <a href="{% url 'authentication:show_all_users' %}" class="btn btn-outline-primary">
-                    <i class="bi bi-arrow-left"></i> Back to Users
-                </a>
+                {% if request.META.HTTP_REFERER and "/order/order/" in request.META.HTTP_REFERER %}
+                    <a href="{{ request.META.HTTP_REFERER }}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Order
+                    </a>
+                {% else %}
+                    <a href="{% url 'authentication:show_all_users' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-arrow-left"></i> Back to Users
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>

@@ -10,15 +10,13 @@
 
     <div class="row mb-4 justify-content-center">
         <div class="col-md-8">
-            <form class="d-flex" method="get" role="search" aria-label="Order search form">
-                <input class="form-control me-2" type="search" name="q"
-                       placeholder="Search by Order ID, Date, Book, Author, User Email or Name"
-                       value="{{ query|default:'' }}" aria-describedby="searchHelp">
+            <form method="get" role="search" aria-label="Order search form" class="d-flex">
+                {{ form.q }}
                 <button class="btn btn-primary" type="submit">
                     <i class="bi bi-search"></i> Search
                 </button>
                 {% if query %}
-                <a href="{% url 'author:show_authors' %}" class="btn btn-outline-secondary ms-2" role="button"
+                <a href="{% url 'order:all_orders' %}" class="btn btn-outline-secondary ms-2" role="button"
                    aria-label="Clear search">
                     <i class="bi bi-x-circle me-1"></i> Clear
                 </a>
@@ -33,8 +31,8 @@
     {% if orders %}
     <form id="close-form" method="post" action="{% url 'order:close_order' %}">
         {% csrf_token %}
-        <input type="hidden" name="page" value="{{ page_obj.number }}">
-        <input type="hidden" name="q" value="{{ query|default:'' }}">
+        {{ form.page }}
+
         <div class="table-responsive shadow-sm rounded p-3">
             <table class="table table-striped table-bordered align-middle text-center w-100">
                 <thead class="table-light">
@@ -52,11 +50,11 @@
                 </thead>
                 <tbody>
                 {% for order in orders %}
-                <tr>
+<tr>
                     <td>
                         <input type="checkbox" name="selected_orders" value="{{ order.id }}">
                     </td>
-                    <td>{{ order.id }}</td>
+                    <td><a href="{% url 'order:show_order' order.id %}">{{ order.id }}</a></td>
                     <td>{{ order.created_at|date:"d M Y" }}</td>
                     <td>{{ order.book.name }}</td>
                     <td>
@@ -95,6 +93,7 @@
             </button>
         </div>
     </form>
+
     {% else %}
     <div class="row">
         <div class="col-md-8 offset-md-2">
