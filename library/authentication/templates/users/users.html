@@ -8,23 +8,23 @@
 
     <div class="row mb-4">
         <div class="col-md-8 offset-md-2">
-            <form class="d-flex" method="get">
+            <form method="get" class="d-flex align-items-center" role="search" aria-label="Search form">
                 <input class="form-control me-2" type="text" name="q"
                        placeholder="Search by ID, First or Last Name" value="{{ query }}">
-                <button class="btn btn-primary" type="submit">
+                <button class="btn btn-primary d-flex align-items-center" type="submit">
                     <i class="bi bi-search"></i> Search
                 </button>
+                {% if filtered %}
+                <a href="{% url 'authentication:show_all_users' %}"
+                   class="btn btn-outline-secondary d-flex align-items-center ms-2"
+                   role="button" aria-label="Clear search">
+                    <i class="bi bi-x-circle me-1"></i> Clear
+                </a>
+                {% endif %}
             </form>
         </div>
     </div>
 
-    {% if filtered %}
-    <div class="row mb-3">
-        <div class="col-md-8 offset-md-2 text-end">
-            <a href="{% url 'authentication:show_all_users' %}" class="btn btn-outline-secondary btn-sm">Clear</a>
-        </div>
-    </div>
-    {% endif %}
 
     {% if page_obj and page_obj|length > 0 %}
     <div class="table-responsive">

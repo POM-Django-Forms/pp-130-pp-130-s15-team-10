@@ -102,7 +102,6 @@ def delete_author(request):
 
 
 @login_required
-@permission_required('author.show_author', raise_exception=True)
 def show_author(request, author_id):
     author = get_object_or_404(Author, pk=author_id, is_deleted=False)
     books = author.books.all()
